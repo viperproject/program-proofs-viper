@@ -1,0 +1,2 @@
+// We cannot do this directly, as Viper can not track the permissions of the tree after iteration.
+// TODO This should be possible by using quantified permissions instead of recursive predicates. Implement this!
