@@ -1,0 +1,83 @@
+//Exercise 11.7
+/**
+ * for each of the provided methods, we need to write a loop invariant
+ * and an explicit decreases clause to prove termination.
+ */
+method UpWhileLess(N: Int) returns (i: Int)
+    requires 0 <= N
+    ensures i == N
+    decreases 
+{
+    i := 0
+    while(i < N)
+        /**
+         * With this loop invariant and the loop condition,
+         * Viper will be able to prove the postcondition of the
+         * method.
+         */
+        invariant i < N + 1
+        /**
+         * With this termination criteria, Viper can prove termination.
+         */
+        decreases N - i
+    {
+        i := i + 1
+    }
+}
+
+method UpWhileNotEqual(N: Int) returns (i: Int)
+    requires 0 <= N
+    ensures i == N
+    decreases
+{
+    i := 0
+    while(i != N)
+        /**
+         * The method postcondition verifies without an
+         * invariant. But without an invariant, we are not able
+         * to prove termination of the while loop.
+         */
+        invariant i <= N
+        /**
+         * With the help of the invariant, as well as this decreases 
+         * clause, we can prove the termination of the loop.
+         */
+        decreases N - i
+    {
+        i := i + 1
+    }
+}
+
+method DownWhileNotEqual(N: Int) returns (i: Int)
+    requires 0 <= N
+    ensures i == 0
+    decreases
+{
+    i := N
+    while(i != 0)
+        /**
+         * In this example we have the same problem as above.
+         * The postcondition could be proven without
+         * the invariant, but we are not able to prove 
+         * termination without the invariant.
+         */
+        invariant i >= 0
+        decreases i
+    {
+        i := i -1 
+    }
+}
+
+method DownWhileGreater(N: Int) returns (i: Int)
+    requires 0 <= N
+    ensures i == 0
+    decreases
+{
+    i := N
+    while(0 < i)
+        invariant i >= 0
+        decreases i
+    {
+        i := i - 1
+    }
+}

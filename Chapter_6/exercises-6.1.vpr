@@ -1,0 +1,15 @@
+import "examples-6.1.vpr"
+
+//Exercise 6.0
+/**
+ * This exercise asks us to define a length function for our list but to use
+ * if and else blocks instead of a match. As Viper does not support matching, 
+ * we have already implemented the length function using the ternary operator.
+ */
+
+//Exercise 6.1
+/**
+ * This exercise asked us to prove lemmaLengthSnoc of the file "examples-6.1.vpr"
+ * without automatic induction. Since there is no automatic induction in Viper,
+ * we have already solved this exercise in the examples.
+ */

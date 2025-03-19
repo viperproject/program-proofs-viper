@@ -1,0 +1,325 @@
+/**  
+ * The file definitions.vpr contains common definitions which are useful for 
+ * translating the examples. 
+ */
+import "../definitions.vpr"
+
+/**
+ * Viper does not have built-in support for arrays, so we need to define an 
+ * array type via a custom domain. We define the array for integers, using an
+ * integer field. While we define arrays generically, the functions and methods
+ * that are needed to provide functionality have to be provided for the 
+ * specific type of the array instance, such as Array[Int]. In those, the Int 
+ * field will be used.
+ */
+field iarrayVal: Int
+
+/**
+ * Likewise, we define arrays for Booleans. Because we define a generic domain,
+ * we only need to provide Viper with an additional type to use, which in this
+ * case is the basic Boolean field, and all functions that are needed to 
+ * provide functionality.
+ */
+field barrayVal: Bool
+
+/**
+ * This domain is a generic representation of one-dimensional arrays. It 
+ * provides helper functions and a binding between an array and its elements.
+ * All functionality outside of this has to be provided for the specific of the
+ * array instance, such as Array[Int] or Array[Bool]. 
+ */
+domain Array[Type] {
+    /**
+     * The loc and len function provide access to the array values and the 
+     * array length.
+     */
+    function loc(a: Array[Type], i: Int): Ref // Models a[i] access
+    function len(a: Array[Type]): Int
+    function first(r: Ref): Array[Type]
+    function second(r: Ref): Int
+
+    /**
+     * We express that the loc function is an injective mapping between array
+     * locations and values through the injectivity axiom.
+     */
+    axiom injectivityI {
+        forall a: Array[Type], i: Int :: {loc(a, i)} first(loc(a, i)) == a && second(loc(a, i)) == i
+    }
+
+    axiom lengthNonegI {
+        forall a: Array[Type] :: len(a) >= 0
+    }
+}
+
+/**
+ * Macros for full and sub-array permissions.
+ */
+define iarrayAccessFull(a)             
+    forall k: Int :: 0 <= k < len(a) ==> acc(loc(a, k).iarrayVal)
+define iarrayAccessFullRange(a, i, j) 
+    forall k: Int :: 0 <= i <= k <= j < len(a) ==> acc(loc(a, k).iarrayVal)
+define iarrayAccessRead(a)
+    forall k: Int :: 0 <= k < len(a) ==> acc(loc(a, k).iarrayVal, 1/2)
+define iarrayAccessReadRange(a, i, j) 
+    forall k: Int :: 0 <= i <= k <= j < len(a) ==> acc(loc(a, k).iarrayVal, 1/2)
+
+define barrayAccessFull(a)             
+    forall k: Int :: 0 <= k < len(a) ==> acc(loc(a, k).barrayVal)
+define barrayAccessFullRange(a, i, j) 
+    forall k: Int :: 0 <= i <= k <= j < len(a) ==> acc(loc(a, k).barrayVal)
+define barrayAccessRead(a)
+    forall k: Int :: 0 <= k < len(a) ==> acc(loc(a, k).barrayVal, 1/2)
+define barrayAccessReadRange(a, i, j) 
+    forall k: Int :: 0 <= i <= k <= j < len(a) ==> acc(loc(a, k).barrayVal, 1/2)
+
+/**
+ * Macros for specifying that the full array or a sub-array have not been 
+ * modified. We need this to reason about the state of the array after access
+ * permissions have been requested.
+ */
+define iarrayUntouched(a) 
+    forall k: Int :: 0 <= k < len(a) ==> loc(a, k).iarrayVal == old(loc(a, k).iarrayVal)
+define iarrayUntouchedRange(a, i, j) 
+    forall k: Int :: 0 <= i <= k <= j < len(a) ==> loc(a, k).iarrayVal == old(loc(a, k).iarrayVal)
+
+/**
+ * Macro for specifying the sortedness of an array.
+ */
+define iarraySorted(a)
+    forall i: Int, j: Int :: 0 <= i < j < len(a) ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+
+/**
+ * Macros for convenient array access and modification.
+ */
+define iarrayLookup(a, i)
+    loc(a, i).iarrayVal
+define iarrayUpdate(a, i, e) {
+    loc(a, i).iarrayVal := e
+}
+
+define barrayLookup(a, i)
+    loc(a, i).barrayVal
+define barrayUpdate(a, i, e) {
+    loc(a, i).barrayVal := e
+}
+
+/**
+ * We define a method that produces a new Array[Int] and ensures its basic 
+ * properties within one method call. A binding between the requested length 
+ * and the instance a gets established and is accessible through the len(a)
+ * function. Access to a gets established and ensured through the postcondition. 
+ * Every call of iarrayInit produces a new Array[Int] to reason about.
+ */
+method iarrayInit(length: Int) returns (a: Array[Int])
+    requires length >= 0
+    ensures iarrayAccessFull(a)
+    ensures len(a) == length
+{
+    inhale len(a) == length
+    inhale iarrayAccessFull(a)
+}
+
+/**
+ * This function models the a[lower..upper] sub-array access pattern from Dafny
+ * for Array[Int]. It also produces immutable sequences and is therefore also 
+ * free from side effects.
+ */
+function iarrayDropTake(a: Array[Int], lower: Int, upper: Int): Seq[Int]
+    requires 0 <= lower <= upper <= len(a)
+    requires iarrayAccessReadRange(a, lower, upper - 1)
+    ensures |result| == upper-lower
+    ensures forall i: Int :: 0 <= i < |result| ==> result[i] == iarrayLookup(a, lower + i)
+{
+    upper - lower == 0 ? Seq() : 
+                         Seq(iarrayLookup(a, lower)) ++ iarrayDropTake(a, lower + 1, upper)
+}
+
+/**
+ * This function models the a[lower..upper] sub-array access pattern from Dafny
+ * for Array[Bool]. It also produces immutable sequences and is therefore also 
+ * free from side effects.
+ */
+function barrayDropTake(a: Array[Bool], lower: Int, upper: Int): Seq[Bool]
+    requires 0 <= lower <= upper <= len(a)
+    requires barrayAccessReadRange(a, lower, upper - 1)
+    ensures |result| == upper-lower
+    ensures forall i: Int :: 0 <= i < |result| ==> result[i] == barrayLookup(a, lower + i)
+{
+    upper - lower == 0 ? Seq() : 
+                         Seq(barrayLookup(a, lower)) ++ barrayDropTake(a, lower + 1, upper)
+}
+
+/**
+ * These macros model the drop (a[lower..]), take (a[..upper]) and full 
+ * array (a[..]) access patterns from Dafny.
+ */
+define iarrayDrop(a, lower)
+    iarrayDropTake(a, lower, len(a))
+define iarrayTake(a, upper)
+    iarrayDropTake(a, 0, upper)
+define iarrayFull(a)
+    iarrayDropTake(a, 0, len(a))
+
+define barrayDrop(a, lower)
+    barrayDropTake(a, lower, len(a))
+define barrayTake(a, upper)
+    barrayDropTake(a, 0, upper)
+define barrayFull(a)
+    barrayDropTake(a, 0, len(a))
+
+/**
+ * This function mimics the Dafny inbuilt multiset() function, which turns a 
+ * sequence of integeres into its corresponding multiset. While the Dafny 
+ * variant accepts sequences containing any type, we have to reimplement it for
+ * each type we want to use it with in Viper. 
+ */
+function multiset(seq: Seq[Int]): Multiset[Int]
+    ensures |seq| == 0 ==> result == Multiset()
+    ensures |seq| > 0 ==> result == Multiset(seq[0]) union multiset(seq[1..])
+    decreases |seq|
+{
+    |seq| == 0 ? Multiset() :
+                 Multiset(seq[0]) union multiset(seq[1..])
+}
+
+/**
+ * This function mimics the Dafny inbuilt multiset() function, which turns a 
+ * sequence of Booleans into its corresponding multiset.
+ */
+function bmultiset(seq: Seq[Bool]): Multiset[Bool]
+    ensures |seq| == 0 ==> result == Multiset()
+    ensures |seq| > 0 ==> result == Multiset(seq[0]) union bmultiset(seq[1..])
+    decreases |seq|
+{
+    |seq| == 0 ? Multiset() :
+                 Multiset(seq[0]) union bmultiset(seq[1..])
+}
+
+/**
+ * Here we define two-dimensional arrays in a generic way. Viper does have 
+ * generic domains, but all functions for it need to be made for the specific
+ * type. The type needs to be specified every time the domain is invoked.
+ */
+domain Array2D[Type] {
+    /**
+     * The loc and len function provide access to the array values and the 
+     * array length. Length has to be checked for each dimension seperately.
+     * Also, the second function has to be expanded for two dimensions to 
+     * satisfy the injectivity axiom.
+     */
+    function loc2D(a: Array2D[Type], i: Int, j: Int): Ref // Models a[i, j] access
+    function len2D0(a: Array2D[Type]): Int
+    function len2D1(a: Array2D[Type]): Int
+    function first2D(r: Ref): Array2D[Type]
+    function second2D0(r: Ref): Int
+    function second2D1(r: Ref): Int
+
+    /**
+     * We express that the loc function is an injective mapping between array
+     * locations and values through the injectivity axiom.
+     */
+    axiom injectivity2D {
+        forall a: Array2D[Type], i: Int, j: Int :: {loc2D(a, i, j)}
+            first2D(loc2D(a, i, j)) == a && second2D0(loc2D(a, i, j)) == i && second2D1(loc2D(a, i, j)) == j
+    }
+
+    /**
+     * Both dimensions are not allowed to be negative.
+     */
+    axiom lengthNoneg2D {
+        forall a: Array2D[Type] :: len2D0(a) >= 0 && len2D1(a) >= 0
+    }
+
+}
+
+/**
+ * Macros for full and sub-array permissions.
+ */
+define iarray2DAccessFull(a)             
+    forall m: Int, n: Int :: 
+        0 <= m < len2D0(a) && 0 <= n < len2D1(a) ==> acc(loc2D(a, m, n).iarrayVal)
+define iarray2DAccessFullRange(a, i, j, k, l)
+    forall m: Int, n: Int :: 
+        0 <= i <= m <= j < len2D0(a) && 0 <= k <= n <= l < len2D1(a) ==> acc(loc2D(a, m, n).iarrayVal)
+define iarray2DAccessRead(a)             
+    forall m: Int, n: Int :: 0 <= m < len2D0(a) && 0 <= n < len2D1(a) ==> 
+        acc(loc2D(a, m, n).iarrayVal, 1/2)
+define iarray2DAccessReadRange(a, i, j, k, l)
+    forall m: Int, n: Int :: 0 <= i <= m <= j < len2D0(a) && 0 <= k <= n <= l < len2D1(a) ==> 
+        acc(loc2D(a, m, n).iarrayVal, 1/2)
+
+/**
+ * Macros for specifying that the full two-dimensional array or sub-array have 
+ * not been modified. We need this to reason about the state of the array after 
+ * access permissions have been requested.
+ */
+define iarray2DUntouched(a) 
+    forall m: Int, n: Int :: 0 <= m < len2D0(a) && 0 <= n < len2D1(a) ==> 
+        loc2D(a, m, n).iarrayVal == old(loc2D(a, m, n).iarrayVal)
+define iarray2DUntouchedRange(a, i, j, k, l) 
+    forall m: Int, n: Int :: 0 <= i <= m <= j < len2D0(a) && 0 <= k <= n <= l < len2D1(a) ==> 
+        loc2D(a, m, n).iarrayVal == old(loc2D(a, m, n).iarrayVal)
+
+/**
+ * Macros for convenient two-dimensional array access and modification.
+ */
+define iarray2DLookup(a, i, j)
+    loc2D(a, i, j).iarrayVal
+
+define iarray2DUpdate(a, i, j, e) {
+    loc2D(a, i, j).iarrayVal := e
+}
+
+/**
+ * We define a method that produces a new Array2D[Int] and ensures its basic 
+ * properties within one method call. A binding between the requested length of
+ * the dimensions and the instance a gets established and is accessible through
+ * the len(a) function. Access to a gets established and ensured through the 
+ * postcondition.  Every call of iarray2DInit produces a new Array2D[Int] for 
+ * Viper to reason about.
+ */
+method iarray2DInit(length0: Int, length1: Int) returns (a: Array2D[Int])
+    requires length0 >= 0 && length1 >= 0
+    ensures iarray2DAccessFull(a)
+    ensures len2D0(a) == length0 && len2D1(a) == length1
+{
+     inhale len2D0(a) == length0 && len2D1(a) == length1
+     inhale iarray2DAccessFull(a)
+}
+
+/**
+ * Macros for full and sub-array permissions.
+ */
+define BArray2DAccess(a)             
+    forall m: Int, n: Int :: 0 <= m < len2D0(a) && 0 <= n < len2D1(a) ==> acc(loc2D(a, m, n).barrayVal)
+define BArray2DAccessRange(a, i, j, k, l) 
+    forall m: Int, n: Int :: 0 <= i <= m <= j < len2D0(a) && 0 <= k <= m <= l < len2D1(a) ==> 
+        acc(loc2D(a, m, n).barrayVal)
+
+/**
+ * Macros for convenient two-dimensional array access and 
+ * modification.
+ */
+define barray2DLookup(a, i, j)
+    loc2D(a, i, j).barrayVal
+
+define barray2DUpdate(a, i, j, e) {
+    loc2D(a, i, j).barrayVal := e
+}
+
+/**
+ * We define a method that produces a new BArray2D and ensures its basic 
+ * properties within one method call. A binding between the requested length of
+ * the dimensions and the instance a gets established and is accessible through
+ * the len(a) function. Access to a gets established and ensured through the 
+ * postcondition. Every call of barray2DInit produces a new BArray2D for Viper
+ * to reason about.
+ */
+method barray2DInit(length0: Int, length1: Int) returns (a: Array2D[Bool])
+    requires length0 >= 0 && length1 >= 0
+    ensures BArray2DAccess(a)
+    ensures len2D0(a) == length0 && len2D1(a) == length1
+{
+     inhale len2D0(a) == length0 && len2D1(a) == length1
+     inhale BArray2DAccess(a)
+}

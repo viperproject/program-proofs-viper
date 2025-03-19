@@ -1,0 +1,14 @@
+/**
+ * This subchapter is about classes with constituent objects that can have
+ * constituent objects of their own. To make all of these constituent objects
+ * accessible to the Dafny verifier, they also have to be included in the
+ * top-level class. This is done by expanding the representation set to include
+ * the constituent objects of the constituent objects and so on.
+ * Because Viper predicates are recursive in nature, we do not need to 
+ * propagate access up the top-level predicate. We simply unfold as many 
+ * predicates as we have to in order to reach the desired constituent predicate.
+ * Only direct changes in fields that are relevant for the verifier need to be
+ * mentioned in postconditions of top-level predicates. Therefore this 
+ * subchapter is not needed in Viper, because the code from 16.2 already 
+ * performs the desired functionality.
+ */

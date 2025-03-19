@@ -1,0 +1,167 @@
+import "examples-12.2.vpr"
+
+//Exercise 12.2
+/**
+ * In this exercise the book asks us to compare the behavior
+ * of the verifier using different versions of the 
+ * invariant and different initializations of p.
+ * 
+ * a)
+ * The verifier complains that the loop invariant might not hold
+ * upon entry into the loop. invariant p == Power(i)
+ * 
+ * b)
+ * The verifier complains again that the loop invariant might not hold
+ * upon entry into the loop. invariant p == Power(i + 1)
+ *
+ * c)
+ * The verifier complains that the loop invariant might not hold
+ * upon entry into the loop. invariant 0 <= i && i <= n
+ *
+ * d)
+ * The verifier still complains that the loop invariant might not hold
+ * upon entry into the loop. invariant 0 <= i && i <= n
+ */
+
+/**
+ * In this method, we will again compute the power of 2.
+ * In the last method we focused on what has been done. There is also
+ * a second way, where we focus on what is still left to do. We will
+ * use this approach in this function.
+ */
+method ComputePower2(n: Int) returns (p: Int)
+    requires 0 <= n 
+    ensures 0 <= p 
+    ensures p == Power(n)
+    decreases
+{
+    p := 1
+    var i: Int := 0
+    while(i != n)
+        invariant 0 <= i && i <= n
+        invariant p * Power(n - i) == Power(n)
+        decreases n - i
+    {
+        p := 2 * p
+        i := i + 1
+    }
+}
+
+//Exercise 12.3
+/**
+ * In this exercise we define a function that computes the power of
+ * a base b to the n.
+ */
+function Exp(b: Int, n: Int): Int
+    requires 0 <= b 
+    requires 0 <= n 
+    ensures 0 <= result
+    decreases n
+{
+    (n == 0) ? 1 : b * Exp(b, n-1)
+}
+
+method ComputeExp(b: Int, n: Int) returns (p: Int)
+    requires 0 <= b 
+    requires 0 <= n 
+    ensures 0 <= p 
+    ensures p == Exp(b, n)
+    decreases
+{
+    p := 1
+    var i: Int := 0
+    while(i != n)
+        invariant 0 <= i && i <= n
+        invariant p == Exp(b, i)
+        decreases n - i
+    {
+        p := b * p 
+        i := i + 1
+    }
+}
+
+//Exercise 12.4
+/**
+ * In this exercise we have to prove two lemmas about the function
+ * Exp. 
+ *
+ * The first lemma proves the fact that additions in the 
+ * exponent translate to multiplication between the same
+ * base and the exponents.
+ */
+function lemmaExpAddExponent(b: Int, m: Int, n: Int) : Unit
+    requires 0 <= b
+    requires 0 <= m 
+    requires 0 <= n 
+    ensures Exp(b, m + n) == Exp(b, m) * Exp(b, n)
+    decreases m
+{
+    (m == 0) ? unit() : lemmaExpAddExponent(b, m - 1, n)
+}
+
+/**
+ * The second lemma proves the fact that squaring the base
+ * translates to multiplying the exponent by 2.
+ */
+function lemmaExpSquareBase(b: Int, n: Int) : Unit
+    requires 0 <= b 
+    requires 0 <= n 
+    ensures Exp(b * b, n) == Exp(b, 2 * n)
+    decreases n
+{
+    (n == 0) ? unit() 
+            : 
+            asserting(b * Exp(b, 2 * n - 1) == b * b * Exp(b, 2 * n - 2)) in
+            lemmaExpSquareBase(b, n -1)
+}
+
+//Exercise 12.5
+/**
+ * This exercise is declared as advanced in the book. It asks
+ * us to implement a method that computes an Exponent using only
+ * O(log(n)) iterations.
+ */
+method FastExp(b: Int, n: Int) returns (p: Int)
+    requires 0 <= b
+    requires 0 <= n
+    ensures 0 <= p
+    ensures p == Exp(b, n)
+    decreases
+{
+    p := 1
+    var i: Int := n
+    var tmp: Int := b
+    var _ : Unit
+
+    while(i != 0)
+        invariant 0 <= i 
+        invariant 0 <= tmp
+        invariant Exp(b, n) == Exp(tmp, i) * p
+        decreases i
+{
+        if (i % 2 == 0)
+        {
+            /**
+             * We need to call this lemma in order to make sure
+             * that the verifier knows the equality 
+             * Exp(tmp * tmp, i) == Exp(tmp, 2 * i) holds. With
+             * this equality the verifier is able to prove the 
+             * invariant.
+             */
+            _ := lemmaExpSquareBase(tmp, i / 2)
+            i := i / 2
+            tmp := tmp * tmp
+        }
+        else 
+        {
+            /**
+             * For the case where i % 2 == 1 we need a different
+             * equality. We need to provide the verifier with the
+             * equality Exp(tmp, (i % 2) + i) == Exp(tmp, i % 2) * Exp(tmp, i).
+             */
+            _ := lemmaExpAddExponent(tmp, i, i % 2)
+            i := i - 1
+            p := p * tmp
+        }
+    }
+}

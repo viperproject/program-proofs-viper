@@ -1,0 +1,27 @@
+import "examples-7.2.vpr"
+
+/**
+ * This function defines multiplication on Unary data types
+ * using the addition function Add. 
+ */
+function Mul(x: Unary, y: Unary): Unary
+    decreases x
+{
+    x.isZero ? Zero() : Add(Mul(x.pred, y), y)
+}
+
+/**
+ * This lemma proves the equivalence between the multiplication
+ * with Integers and the multiplication with Unary numbers using
+ * our the Mul function. 
+ */
+function lemmaMulCorrect(x: Unary, y: Unary): Unit
+    ensures UnaryToNat(Mul(x, y)) == UnaryToNat(x) * UnaryToNat(y)
+    decreases x
+{
+    x.isZero ? unit() : let _0 == (UnaryToNat(Mul(x, y))) in 
+                                let _1 == (UnaryToNat(Add(Mul(x.pred, y), y))) in 
+                                let _2 == (lemmaAddCorrect(Mul(x.pred, y), y)) in 
+                                let _3 == (UnaryToNat(Mul(x.pred, y)) + UnaryToNat(y)) in 
+                                lemmaMulCorrect(x.pred, y)
+}

@@ -1,0 +1,24 @@
+import "examples-10.2.vpr"
+
+//Exercise 10.2
+/**
+ * In this exercise we are asked to prove the lemma 
+ * BinaryHeapStoresMinimum, which proves that the smallest
+ * value is stored in the root.
+ */
+function lemmaBinaryHeapStoresMinimum(pq: PQueue, y: Int): Unit
+    requires IsBinaryHeap(pq) && (y in Elements(pq)) > 0
+    ensures pq.x <= y
+{
+    pq.isLeaf                       ? unit() :
+    ((y in Elements(pq.left)) > 0)  ? lemmaBinaryHeapStoresMinimum(pq.left, y) :
+    ((y in Elements(pq.right)) > 0) ? lemmaBinaryHeapStoresMinimum(pq.right, y) :
+                                      unit()
+}
+
+//Exercise 10.3
+/**
+ * If we would use only the second disjunction, then we can not infer
+ * that left is of type Node and would fail when we try to access the value 
+ * x of left.
+ */

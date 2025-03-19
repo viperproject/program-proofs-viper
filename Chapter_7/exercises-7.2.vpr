@@ -1,0 +1,73 @@
+import "examples-7.2.vpr"
+
+//Exercise 7.5
+/**
+ * Automatic induction
+ */
+
+//Exercise 7.6
+/**
+ * This lemma proves the associativity of our Add function.
+ */
+function lemmaAddAssociative(x: Unary, y: Unary, z: Unary): Unit
+    ensures Add(Add(x, y), z) == Add(x, Add(y, z))
+    decreases y
+{
+    /**
+     * In this proof, we need to use other lemmas. We need to ensure that adding zero()
+     * to any Unary x will return the same Unary x. We also need the fact that using the 
+     * successor of an addition results in the same Unary as adding the successor of one 
+     * Unary to the other.
+     */
+    y.isSuc ? let _0 == (lemmaSucAdd(Add(x, y.pred), z)) in 
+                let _1 == (lemmaSucAdd(y.pred, z)) in lemmaAddAssociative(x, y.pred, z)
+                : 
+                let _0 == (lemmaAddZero(x)) in
+                let _1 == (lemmaAddZero(z)) in 
+                unit()
+}
+
+//Exercise 7.7
+/**
+ * This lemma proves the commutativity of our Add function.
+ */
+function lemmaAddCommutative(x: Unary, y: Unary): Unit
+    ensures Add(x, y) == Add(y, x)
+    decreases x
+{
+    x.isSuc ? let _ == (lemmaSucAdd(x.pred, y)) in
+                lemmaAddCommutative(x.pred, y) 
+                : 
+                let _ == (lemmaAddZero(y)) in 
+                unit()
+}
+
+//Exercise 7.8
+/**
+ * Just like addition with Integers, we can also use associativity and 
+ * commutativity together with our Unary Add function.
+ */
+function lemmaAddCommAssoc(x: Unary, y: Unary, z: Unary): Unit
+    ensures Add(Add(x, y), z) == Add(Add(x, z), y)
+    decreases z
+{
+    z.isSuc ? let a == (lemmaSucAdd(Add(x, z.pred), y)) in 
+                lemmaAddCommAssoc(x, y, z.pred) 
+                : 
+                unit()
+}
+
+
+//Exercise 7.9
+/** 
+ * This lemma proves that if we subtract y from x and then add
+ * y again to this subtracted Unary, we will get x again. This 
+ * lemma shows us that Add and Sub are inverse functions. 
+ */
+function lemmaAddSub(x: Unary, y: Unary): Unit
+    requires !Less(x, y) 
+    ensures Add(Sub(x, y), y) == x
+    decreases x
+{
+    y.isZero ? unit() : lemmaAddSub(x.pred, y.pred)
+}

@@ -1,0 +1,32 @@
+import "examples-12.1.vpr"
+
+//Exercise 12.1
+/**
+ * We are asked to implement a cube method that iterates n times
+ * and only uses addition in its loop body.
+ */
+method Cube(n: Int) returns (c: Int)
+    requires 0 <= n
+    ensures 0 <= c 
+    ensures c == n * n * n 
+    decreases
+{
+    c := 0
+    var i: Int := 0
+    var y: Int := 1
+    var k: Int := 8
+    var tmp1: Int := c
+    while (i != n)
+        invariant 0 <= i && i <= n
+        invariant c == i * i * i
+        invariant y == (i + 1) * (i + 1) * (i + 1)
+        invariant k == 6*i*i + 12*i + 8
+        decreases n - i
+    {
+        tmp1 := c
+        c := y
+        y := tmp1 + k
+        k := k + i + i + i + i + i + i + i + i + i + i + i + i + 18
+        i := i + 1
+    }
+}

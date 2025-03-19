@@ -1,0 +1,7 @@
+// Viper support Dafny-like datatypes as ADTs. Parameters have to be named.
+adt BYTree {
+    BlueLeaf()
+    YellowLeaf()
+    Node(left: BYTree, right: BYTree)
+}
+

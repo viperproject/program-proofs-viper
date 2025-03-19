@@ -1,0 +1,24 @@
+adt Color{
+    Blue()
+    Yellow()
+    Green()
+    Red()
+}
+
+adt Tree[T] {
+    Leaf(data: T)
+    Node(left: Tree[T], right: Tree[T])
+}
+
+function AllBlue(t: Tree[Color]): Bool
+{
+    t.isLeaf ? t.data.isBlue : AllBlue(t.left) && AllBlue(t.right)
+}
+
+// Viper does not support generic functions, so we can only define this function for the specific type Tree[Color]
+function Size(t: Tree[Color]): Int
+{
+    t.isLeaf ? 1 : 1 + Size(t.left) + Size(t.right)
+}
+
+

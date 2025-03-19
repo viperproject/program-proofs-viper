@@ -1,0 +1,102 @@
+import "examples-8.0.vpr"
+
+/**
+ * This function sorts the input list using the Insertion Sort algorithm. 
+ */
+function InsertionSort(xs: List[Int]): List[Int]
+    decreases xs
+{
+    xs.isNil ? Nil() : Insert(xs.value, InsertionSort(xs.tail))
+}
+
+/**
+ * This function traverses xs and inserts an element y at the first position where
+ * it is greater than the head of the sublist.
+ */
+function Insert(y: Int, xs: List[Int]): List[Int]
+    decreases xs
+{
+    xs.isNil ? Cons(y, Nil()) 
+            : 
+            (y < xs.value) ? Cons(y, xs) 
+                : 
+                Cons(xs.value, Insert(y, xs.tail))
+}
+
+/**
+ * This lemma uses the function Ordered to prove that 
+ * InsertionSort is correct. It checks whether the resulting
+ * list returned by InsertionSort is ordered.
+ */
+function lemmaInsertionSortOrdered(xs: List[Int]): Unit
+    ensures Ordered(InsertionSort(xs))
+    decreases xs
+{
+    xs.isNil ? unit() : let _0 == (lemmaInsertionSortOrdered(xs.tail)) in  
+                        let _1 == (lemmaInsertOrdered(xs.value, InsertionSort(xs.tail))) in 
+                        lemmaInsertOrdered(xs.value, InsertionSort(xs.tail))
+}
+
+/**
+ * This lemma proves that the insert function inserts
+ * the element at the correct location in the list.
+ */
+function lemmaInsertOrdered(y: Int, xs: List[Int]): Unit
+    requires Ordered(xs)
+    ensures Ordered(Insert(y, xs))
+    decreases xs
+{
+    xs.isNil ? unit() : lemmaInsertOrdered(y, xs.tail)
+}
+
+/**
+ * This lemma proves that the number of elements of a given value is the same after
+ * calling InsertionSort, so InsertionSort does not add or remove elements.
+ * This is done by comparing the Projection of the list xs and the list InsertionSort(xs). 
+ */
+function lemmaInsertionSortSameElements(xs: List[Int], p: Int): Unit
+    ensures Project(xs, p) == Project(InsertionSort(xs), p)
+    decreases xs
+{
+    xs.isNil ? unit() : let _0 == (lemmaInsertionSortSameElements(xs.tail, p)) in 
+                        lemmaInsertSameElements(xs.value, InsertionSort(xs.tail), p)
+}
+
+/**
+ * This lemma proves that the projection on an element p
+ * does not care where the elements equal to p are in a 
+ * list. Therefore Inserting an element y into a list or
+ * connecting it to the front does not change the 
+ * projection of the resulting list.
+ */
+function lemmaInsertSameElements(y: Int, xs: List[Int], p: Int): Unit
+    ensures Project(Cons(y, xs), p) == Project(Insert(y, xs), p)
+    decreases xs
+{
+    (y == p) ? xs.isNil ? unit() 
+                            :   
+                            (xs.value <= y) ? (xs.value == p) ? let _0 == (lemmaInsertSameElements(y, xs.tail, p)) in 
+                                                                    asserting(Project(Cons(y, xs), p) == Project(Insert(y, xs), p)) in unit()
+                                                                    : 
+                                                                    asserting(Project(Cons(y, xs), p) == Cons(y, Project(xs, p))) in 
+                                                                    let _1 == (lemmaInsertSameElements(y, xs.tail, p)) in 
+                                                                    asserting(Project(Cons(y, xs.tail), p) == Project(Insert(y, xs.tail), p)) in unit()
+                                                : 
+                                                unit()
+                : 
+                lemmaDifferentElementsInserted(y, xs, p)
+}
+
+/**
+ * Unlike in the book, Viper is not able to prove lemmaInsertSameElements automatically.
+ * We need an additional lemma. Namely, if we project a list using
+ * a value p and we insert into the list a value y which is not equal
+ * to p, then Project(Insert(y, xs), p) == Project(xs, p) holds.
+ */
+function lemmaDifferentElementsInserted(y: Int, xs: List[Int], p: Int): Unit
+    requires y != p
+    ensures Project(Insert(y, xs), p) == Project(xs, p)
+    decreases xs
+{
+    xs.isNil ? unit() : lemmaDifferentElementsInserted(y, xs.tail, p)
+}

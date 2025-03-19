@@ -1,0 +1,114 @@
+import "examples-6.5.vpr"
+
+/**
+ * In this sub-chapter, we are going to consider an operation that reverses
+ * a list.
+ *
+ * This function is rather inefficient. We add the current value to the end
+ * of the reversed tail list.
+ */
+function SlowReverse(xs: List[Int]): List[Int]
+  decreases xs
+{
+  xs.isNil ? Nil() : Snoc(SlowReverse(xs.tail), xs.value)
+}
+
+/**
+ * This lemma proves that both the original list and the reversed list
+ * will have the same length.
+ */
+function lemmaLengthSlowReverse(xs: List[Int]): Unit
+  ensures length(SlowReverse(xs)) == length(xs)
+  decreases xs
+{
+    /** 
+     * As in Dafny, we require a call to lemmaLengthSnoc to prove this.
+     */
+    xs.isNil ?  (unit()) : let _ == (lemmaLengthSnoc(SlowReverse(xs.tail), xs.value)) in 
+                            lemmaLengthSlowReverse(xs.tail)
+}
+
+
+/**
+ * This function will help us define a faster reverse. It takes two inputs, 
+ * a list xs to reverse and a list ac of already reversed elements.
+ */
+function ReverseAux(xs: List[Int], ac: List[Int]): List[Int]
+  decreases xs
+{
+  xs.isNil ? ac : ReverseAux(xs.tail, Cons(xs.value, ac))
+}
+
+
+/**
+ * This lemma proves that ReverseAux and SlowReverse return the same list for the same input parameters.
+ */
+function lemmaReverseAuxSlowCorrect(xs: List[Int], ac: List[Int]): Unit
+  ensures ReverseAux(xs, ac) == append(SlowReverse(xs), ac)
+  decreases xs
+{
+    /**
+     * To prove this lemma we need three previously proven lemmas.
+     * Those lemmas can be found in file examples-6.2.vpr.
+     */
+    xs.isNil ? unit() :  let _0 == (lemmaSnocAppend(SlowReverse(xs.tail), xs.value)) in 
+                              let _1 == (lemmaAppendAssociative(SlowReverse(xs.tail), Cons(xs.value, Nil()), ac)) in 
+                              let _2 == (lemmaReverseAuxSlowCorrect(xs.tail, Cons(xs.value, ac))) in
+                              lemmaReverseAuxSlowCorrect(xs.tail, ac)
+}
+
+/**
+ * This function uses the previously defined function ReverseAux to define a more efficient reverse function.
+ */
+function Reverse(xs: List[Int]): List[Int]
+  decreases xs
+{
+  ReverseAux(xs, Nil())
+}
+
+/**
+ * This lemma proves the equality between our more efficient reverse
+ * function Reverse and our original reverse function SlowReverse. 
+ * Both of those functions should return their input list in 
+ * reversed order and their result should therefore be equal.
+ */
+function lemmaReverseCorrect(xs: List[Int]): Unit
+  ensures Reverse(xs) == SlowReverse(xs)
+  decreases xs
+{
+  xs.isNil ? unit() : let _0 == (lemmaReverseAuxSlowCorrect(xs, Nil())) in 
+                          let _1 == (lemmaAppendNil(SlowReverse(xs))) in 
+                          lemmaReverseCorrect(xs.tail)
+}
+
+/**
+ * This lemma proves that the two functions Reverse and ReverseAux
+ * are similar. The second parameter of ReverseAux should already be
+ * reversed. The first list parameter of Reverse aux, is the only 
+ * list that still needs to be reversed, therefore the result of
+ * reversing the first list parameter and appending the second one to
+ * the result should be equal to ReverseAux with those two input
+ * parameters.
+ */
+function lemmaReverseAuxCorrect(xs: List[Int], ac: List[Int]): Unit
+  ensures ReverseAux(xs, ac) == append(Reverse(xs), ac)
+  decreases xs
+{
+  xs.isNil ? unit() : let _0 == (lemmaReverseCorrect(xs)) in 
+                          let _1 == (lemmaReverseAuxSlowCorrect(xs, ac)) in 
+                          lemmaReverseAuxCorrect(xs.tail, ac)
+}
+
+
+/**
+ * This lemma proves that the length of the reversed list should
+ * be the same as the length of the original list.
+ */
+function lemmaLengthReverse(xs: List[Int]): Unit
+  ensures length(Reverse(xs)) == length(xs)
+  decreases xs
+{
+  xs.isNil ? unit() : let _0 == (lemmaReverseCorrect(xs)) in 
+                          let _1 == (lemmaLengthSlowReverse(xs)) in 
+                          lemmaLengthReverse(xs.tail)
+}

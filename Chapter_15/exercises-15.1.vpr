@@ -1,0 +1,48 @@
+import "examples-15.1.vpr"
+
+/**
+ * This method is a modified version of the Selection sort algorithm, which
+ * swaps every element which is smaller than the current minimum n immediately,
+ * instead of storing the minimum index and swapping the elements after the 
+ * remaining array portion has been searched. This is meant as practice with
+ * invariants.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one value.
+ */
+method SelectionSortModifiedInnerLoop(a: Array[Int])
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures iarraySorted(a)
+    // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+{
+    var n: Int := 0
+    while (n != len(a))
+        invariant iarrayAccessFull(a)
+        invariant 0 <= n <= len(a)
+        invariant forall i: Int, j: Int :: 0 <= i < j < n ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+        // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+        invariant SplitPoint(a, n)
+    {
+        var m: Int := n + 1
+        while (m != len(a))
+            invariant iarrayAccessFull(a)
+            invariant n <= m <= len(a)
+            invariant forall i: Int :: 0 <= n <= i < m ==> iarrayLookup(a, n) <= iarrayLookup(a, i)
+            invariant forall i: Int, j: Int :: 0 <= i < j < n ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+            // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+            invariant SplitPoint(a, n)
+        {
+            if (iarrayLookup(a, m) < iarrayLookup(a, n))
+            {
+                var tmp: Int := iarrayLookup(a, n)
+                iarrayUpdate(a, n, iarrayLookup(a, m))
+                iarrayUpdate(a, m, tmp)
+            }
+            m := m + 1
+        }
+        n := n + 1
+    }
+}

@@ -1,0 +1,21 @@
+adt ColoredTree{
+    Leaf(color: Color)
+    Node(left: ColoredTree, right: ColoredTree)
+}
+
+adt Color{
+    Blue()
+    Yellow()
+    Green()
+    Red()
+}
+
+function IsSwedishFlagColors(t: Color): Bool
+{
+    t.isBlue || t.isYellow
+}
+
+function isLithuanianFlagColors(t: Color): Bool
+{
+    t != Blue()
+}

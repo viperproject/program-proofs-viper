@@ -1,0 +1,31 @@
+function More(x: Int): Int {
+  x <= 0 ? 1 : More(x - 2) + 3
+}
+
+// As we only call this lemma in a method body, we model it as a method
+// Later we will have to model lemmas as functions so that we can call them in expressions.
+method Increasing(x: Int)
+ensures x < More(x)
+decreases x
+{
+  // Viper does not offer automatic induction. So we always have to explicitly state the induction.
+  if(x <= 0){
+
+  } else {
+    Increasing(x - 2);
+  }
+}
+
+method ExampleLemmaUse(a: Int)
+{    
+  var b: Int
+  var c: Int                        
+  Increasing(a);
+  b := More(a);
+  c := More(b);
+  if (a < 1000) {
+    Increasing(More(a))
+    assert 2 <= c - a
+  }
+  assert 2 <= c - a || 200 <= a
+}

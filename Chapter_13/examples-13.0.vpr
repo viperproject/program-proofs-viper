@@ -1,0 +1,110 @@
+import "Array.vpr"
+
+/**
+ * This chapter is focused on arrays. Because Viper does not have inbuilt 
+ * arrays, we have to define a custom domain, which is imported from the 
+ * Chapter 13 definitions file. Due to Viper not making any assumptions about 
+ * data types, we model each individual data type interaction as its own domain. 
+ * We can define the content of the data structure generically, but have to 
+ * specify each interaction for the specific type in a method or function with
+ * that specific type. In this case, this a custom generic array called 
+ * Array[Type], which can be used as integer array through the Array[Int] type.
+ * In the definitions, there are helper functions, methods and macros to make
+ * the code more concise. These examples showcase the usage of some of these 
+ * implementations.
+ */
+method Arrays13_0_0() {
+    var a: Array[Int] := iarrayInit(100)
+
+    assert len(a) == 100
+
+    a := iarrayInit(20)
+
+    iarrayUpdate(a, 6, 2)    
+    iarrayUpdate(a, 7, 3)
+    assert iarrayLookup(a, 6) == 2 && iarrayLookup(a, 7) == 3
+}
+
+
+method TestArrayElements(j: Int, k: Int) 
+    requires 0 <= j < 10 && 0 <= k < 10
+    {
+        var a: Array[Int] := iarrayInit(10)
+        iarrayUpdate(a, j, 60)
+        iarrayUpdate(a, k, 65)
+        if (j == k)
+        {
+            assert iarrayLookup(a, j) == 65
+        }
+        else
+        {
+            assert iarrayLookup(a, j) == 60
+        }
+    }
+
+/**
+ * Viper also does not have an inbuilt string type. For the purposes of this 
+ * example, we will not focus on strings directly. Instead, we will use an 
+ * integer array where each element represents the sum of the ASCII values of 
+ * the characters in a string. The array also behaves the same as Dafny inbuilt
+ * arrays for these examples. 
+ */
+method Arrays13_0_2() {
+    var a: Array[Int] := iarrayInit(20)
+    iarrayUpdate(a, 7, 532) // "hello"
+    var b: Array[Int] := a
+    assert iarrayLookup(b, 7) == 532
+    iarrayUpdate(b, 7, 209) // "hi"
+    iarrayUpdate(a, 8, 968) // "greetings"
+    assert iarrayLookup(a, 7) == 209 && iarrayLookup(b, 8) == 968 
+
+    b := iarrayInit(8)
+    iarrayUpdate(b, 7, 1541) // "long time, no see"
+    assert iarrayLookup(a, 7) == 209
+    assert len(a) == 20 && len(b) == 8
+}
+
+/**
+ * Viper also does not have an inbuilt two-dimensional Boolean array type. We
+ * described this data type as a custom domain in the definitions. The domain 
+ * behavior mimics the Dafny inbuilt type array2<bool>.
+ */
+method Arrays13_0_3() {
+    var m: Array2D[Bool] := barray2DInit(3, 10)
+    barray2DUpdate(m, 0, 9, true)
+    barray2DUpdate(m, 1, 8, false)
+    assert len2D0(m) == 3 && len2D1(m) == 10
+}
+
+/**
+ * Viper also has sequences and they work the same as Dafny sequences, apart
+ * from the interaction with arrays. Because arrays are a custom domain, we
+ * need to provide Viper with a method to perform the same take and drop
+ * operations on arrays as on sequences. The implementations are in the
+ * definitions file.  
+ */
+method Arrays13_0_4() {
+    var greetings: Seq[Int] := Seq(326, 420, 530) // ["hey", "hola", "tjena"]
+    assert |greetings| == 3
+    var i: Seq[Int] := Seq(1, 5, 12)
+    var j: Seq[Int] := Seq(22, 35)
+    var p: Seq[Int] := i ++ j
+    assert p == Seq(1, 5, 12, 22, 35)
+    assert p[0] == 1
+
+    assert p[2..4] == Seq(12, 22)
+    assert p[..2] == Seq(1, 5)
+    assert p[2..] == Seq(12, 22, 35)
+    assert greetings[..1] == Seq(326)
+    assert greetings[1..2] == Seq(420)
+
+    var a: Array[Int] := iarrayInit(3)
+    iarrayUpdate(a, 0, 6)
+    iarrayUpdate(a, 1, 28)
+    iarrayUpdate(a, 2, 496)
+    assert iarrayTake(a, 2) == Seq(6, 28) && iarrayDrop(a, 1) == Seq(28, 496)
+    var s: Seq[Int] := iarrayFull(a)
+    assert s == Seq(6, 28, 496)
+    iarrayUpdate(a, 0, 8128)
+    assert s[0] == 6 && iarrayLookup(a, 0) == 8128
+}

@@ -1,0 +1,88 @@
+import "../definitions.vpr"
+
+
+/**
+ * We need functions defined in Chapter 6 such as At.
+ */
+import "../Chapter_6/examples-6.4.vpr"
+
+/**
+ * In the book, some of the functions presented in this chapter are 
+ * defined as ghost functions. Ghost functions in Dafny are not compiled
+ * and are only used for specification and verification purposes. In Viper,
+ * there is no distinction between ghost and non-ghost code. As such,
+ * all functions in Dafny are implemented as functions in Viper (regardless
+ * of whether they are ghost or not), and all Dafny methods are translated to
+ * Viper methods.
+ */
+
+/**
+ * Returns true if the list is ordered
+ */
+function Ordered(xs: List[Int]): Bool
+    decreases xs
+{
+    xs.isNil                      ? true : 
+    (xs == Cons(xs.value, Nil())) ? true :
+                                    xs.value <= xs.tail.value && Ordered(xs.tail)
+}
+
+/** 
+ * This lemma proves that the Ordered function is correct, i.e., the element
+ * at position i is smaller or equal to the element at place i + 1. 
+ */
+function lemmaAllOrdered(xs: List[Int], i: Int, j: Int): Unit
+    /**
+     * i and j must be non-negative integers.
+     */
+    requires i >= 0 
+    requires i <= j && j < length(xs)
+    /**
+     * Here we use the 'ghost' function Ordered, to make sure
+     * that the original list xs is ordered. we also need to 
+     * enforce that i and j are smaller than the length(xs),
+     * since they would not be valid indices otherwise.
+     */
+    requires Ordered(xs)
+    ensures At(xs, i) <= At(xs, j)
+    decreases xs
+{
+    (i!=0) ? (lemmaAllOrdered(xs.tail, i-1, j-1)) : 
+    (i!=j) ?    let b == (At(xs, 1) <= At(xs, j)) in
+             lemmaAllOrdered(xs.tail, 0, j-1) : 
+             unit()
+}
+
+/**
+ * This function counts the occurrences of p in the list xs.
+ */
+function Count(xs: List[Int], p: Int): Int
+    ensures result >= 0
+    ensures !(xs.isNil) ==> result == (xs.value == p ? 1 : 0) + Count(xs.tail, p)
+    ensures xs.isNil ==> result == 0
+    decreases xs
+{
+    xs.isNil        ? 0 : 
+    (xs.value == p) ? 1 + Count(xs.tail, p) : 
+                      Count(xs.tail, p)
+}
+
+method client()
+{
+    var l: List[Int] := Cons(1, Cons(2, Cons(3, Nil())));
+    assert length(l) == 3;
+    assert Count(l, 1) == 1;
+}
+
+
+/**
+ * The function takes a list xs and an element p and returns a list  
+ * containing only the elements of xs that are equal to p. 
+ */
+function Project(xs: List[Int], p: Int): List[Int]
+   decreases xs
+{
+    xs.isNil        ? Nil() : 
+    (xs.value == p) ? Cons(xs.value, Project(xs.tail, p)) : 
+                      Project(xs.tail, p)
+}

@@ -1,0 +1,13 @@
+method Triple(x: Int) returns (r: Int)
+{
+    var y: Int := 2 * x
+    r := x + y
+}
+
+// In Viper, you cannot declare a variable and assign it to the result of a method call in the same line.
+method call()
+{
+    var t: Int
+    t := Triple(18)
+}
+

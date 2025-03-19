@@ -1,0 +1,208 @@
+import "examples-8.1.vpr"
+
+/**
+ * This function implements a merge sort algorithm to sort a list.
+ * 
+ */
+function MergeSort(xs: List[Int]): List[Int]
+    decreases xs
+{
+    MergeSortAux(xs, length(xs))
+}
+
+/**
+ * This function takes a list and the length of the list as inputs
+ *  and sorts it with the help of the two functions Split and Merge.
+ */
+function MergeSortAux(xs: List[Int], len: Int): List[Int]
+    requires len >= 0       
+    requires len == length(xs)
+    decreases len
+{
+    (len < 2) ? xs :    let x == (Split(xs, len/2)) in
+                     Merge(MergeSortAux(getLeft(x), len/2), MergeSortAux(getRight(x), len - len/2))
+}
+
+/**
+ * This function splits the list into two parts. It returns a 
+ * pair of lists, where the first one consists of the first n
+ * elements of the input list and the second one consists of the
+ * rest.
+ */
+function Split(xs: List[Int], n: Int): Pair[List[Int], List[Int]]
+    /**
+     * We require n to be a position in the list. Therefore n 
+     * has to be between 0 and length(xs).
+     */
+    requires n >= 0    
+    requires n <= length(xs)
+    ensures length(getLeft(result)) == n && length(getRight(result)) == length(xs) - n && append(getLeft(result), getRight(result)) == xs
+    decreases xs, n
+{
+    (n==0) ? pair(Nil(), xs) : let x == (Split(xs.tail, n-1)) in 
+        pair(Cons(xs.value, getLeft(x)), getRight(x))
+}
+
+/**
+ * This function merges two lists by iterating through both lists at the same time
+ * and always taking the smaller element.
+ */
+function Merge(xs: List[Int], ys: List[Int]): List[Int]
+    decreases xs, ys
+{
+    (xs.isNil && ys.isNil)  ? Nil() : 
+    (xs.isCons && ys.isNil) ? xs :
+    (xs.isNil && ys.isCons) ? ys : 
+    (xs.value <= ys.value)  ? Cons(xs.value, Merge(xs.tail, ys)) : 
+                              Cons(ys.value, Merge(xs, ys.tail))
+}
+
+
+
+/**
+ * This lemma proves that if we sort our list with MergeSort,
+ * then the result will be ordered.
+ *
+ * This will be proven with 3 different lemmas. They mimic the
+ * structure of MergeSort and the auxiliary function 
+ * MergeSortAux.
+ */
+function lemmaMergeSortOrdered(xs: List[Int]): Unit
+    ensures Ordered(MergeSort(xs))
+    decreases xs
+{
+    lemmaMergeSortAuxOrdered(xs, length(xs))
+}
+
+/**
+ * This lemma proves that if we sort an array with 
+ * MergeSortAux, then the resulting array will be Ordered.
+ */
+function lemmaMergeSortAuxOrdered(xs: List[Int], len: Int): Unit
+    /**
+     * We need len to be greater than 0 since it would
+     * otherwise not be a valid input.
+     */
+    requires len >= 0
+    requires len == length(xs)
+    ensures Ordered(MergeSortAux(xs, len))
+    decreases len
+{
+    (len >= 2) ?    let left == (getLeft(Split(xs, len/2))) in 
+                    let right == (getRight(Split(xs, len/2))) in 
+                    let _0 == (lemmaMergeSortAuxOrdered(getLeft(Split(xs, len/2)), len/2)) in
+                    let _1 == (lemmaMergeSortAuxOrdered(getRight(Split(xs, len/2)), len - len/2)) in
+                 lemmaMergeOrdered(MergeSortAux(left, len/2), MergeSortAux(right, len - len/2)) : 
+                 unit()
+}
+
+/**
+ * This lemma proves that if we merge two ordered lists
+ * with the function Merge, the result will also be ordered. 
+ */
+function lemmaMergeOrdered(xs: List[Int], ys: List[Int]): Unit
+    requires Ordered(xs) && Ordered(ys)
+    ensures Ordered(Merge(xs, ys))
+    decreases xs, ys
+{
+    xs.isNil               ? unit() : 
+    (xs.value <= ys.value) ? lemmaMergeOrdered(xs.tail, ys) :
+    ys.isNil               ? unit() : 
+                             lemmaMergeOrdered(xs, ys.tail)
+}
+
+
+ /**
+  * This lemma proves that if we project a list using a certain
+  * element p, then we will get the same result as if we would have
+  * sorted the list first with MergeSort and then Projected it.
+ */
+ function lemmaMergeSortSameElements(xs: List[Int], p: Int): Unit
+    ensures Project(xs, p) == Project(MergeSort(xs), p)
+    decreases xs
+{
+    lemmaMergeSortAuxSameElements(xs, length(xs), p)
+}
+
+/**
+ * In this lemma we prove that projecting xs onto an element p gives us the
+ * same result as projecting the list xs sorted by MergeSortAux onto p.
+ */
+function lemmaMergeSortAuxSameElements(xs: List[Int], len: Int, p: Int): Unit
+    requires len >= 0 
+    requires len == length(xs)
+    ensures Project(xs, p) == Project(MergeSortAux(xs, len), p)
+    decreases len
+{
+    (2 <= len) ?    let left == (getLeft(Split(xs, len/2))) in 
+                    let right == (getRight(Split(xs, len/2))) in 
+                    let _0 == (lemmaMergeSortAuxOrdered(left, len/2)) in 
+                    let _1 == (lemmaMergeSortAuxOrdered(right, len - len/2)) in 
+                    let _2 == (lemmaMergeSameElements(MergeSortAux(left, len / 2), MergeSortAux(right, len - len / 2), p)) in
+                    let _3 == (lemmaMergeSortAuxSameElements(left, len / 2, p)) in
+                    let _4 == (lemmaMergeSortAuxSameElements(right, len - len / 2, p)) in
+                    let _5 == (lemmaAppendProject(left, right, p)) in
+                 unit() : 
+                 unit()
+}
+
+/**
+ * This lemma proves that appending a Nil() list does not change 
+ * the value of a projection.
+ */
+function lemmaAppendProjectNil(xs: List[Int], p: Int): Unit
+    requires Ordered(xs)
+    ensures append(Project(xs, p), Nil()) == Project(xs, p)
+    decreases xs
+{
+    xs.isNil        ? unit() :
+    (xs.value == p) ? lemmaAppendProjectNil(xs.tail, p) :
+                      lemmaAppendProjectNil(xs.tail, p)
+}
+
+/**
+ * This lemma is another auxiliary result to help us prove lemmaMergeSameElements.
+ */
+function lemmaAppendProjectMerge(xs: List[Int], ys: List[Int], p: Int): Unit
+    requires p == ys.value && Ordered(xs) && Ordered(ys) && ys.isCons
+    ensures Cons(ys.value, append(Project(xs, p), Project(ys.tail, p))) == append(Project(xs, p), Project(ys, p))
+    decreases xs, ys
+{
+    xs.isNil ? unit() :
+                let _ == (lemmaAppendProjectMerge(xs.tail, ys, p)) in
+               unit()
+}
+
+/**
+ * This function proves that after projecting, there is no difference between
+ * merging two lists and appending them.
+ */
+function lemmaMergeSameElements(xs: List[Int], ys: List[Int], p: Int): Unit
+    requires Ordered(xs) && Ordered(ys)
+    ensures Project(Merge(xs, ys), p) == append(Project(xs, p), Project(ys, p))
+    decreases xs, ys
+{
+    xs.isNil               ? unit() :
+    ys.isNil               ?    let _0 == (lemmaAppendProjectNil(xs, p)) in
+                             lemmaMergeSameElements(xs.tail, ys, p) :
+    (xs.value <= ys.value) ?    let _0 == (lemmaMergeSameElements(xs.tail, ys, p)) in
+                             unit() :
+    (ys.value == p)        ?    let _0 == (lemmaMergeSameElements(xs, ys.tail, p)) in
+                                let _1 == (lemmaAppendProjectMerge(xs, ys, p)) in
+                             unit() :
+                                let _0 == (lemmaMergeSameElements(xs, ys.tail, p)) in
+                             unit()
+}
+
+
+/**
+ * This lemma proves that the order of appending and projecting does not matter.
+ */
+function lemmaAppendProject(xs: List[Int], ys: List[Int], p: Int): Unit
+    ensures append(Project(xs, p), Project(ys, p)) == Project(append(xs, ys), p)
+    decreases xs
+{
+    xs.isNil        ? (unit()) : 
+    (xs.value == p) ? lemmaAppendProject(xs.tail, ys, p) : 
+                      lemmaAppendProject(xs.tail, ys, p)
+}

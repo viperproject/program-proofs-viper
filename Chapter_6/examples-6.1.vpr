@@ -1,0 +1,80 @@
+/**  
+ * The file definitions.vpr contains common definitions which are useful for translating
+ * the examples. 
+ */
+import "../definitions.vpr"
+
+/** 
+* We define a list in a standard way, Nil() represents the empty list and Cons(x, xs)
+* (from construct) represents a list with element x as its head and list xs as its tail. 
+* Note that while Viper supports generic ADTs, it does not support generic functions.
+* So all functions operating on this ADT will be defined for a specific type, in this
+* case Int.
+*/
+adt List[T] {
+  Nil()
+  Cons(value: T, tail: List[T])
+} 
+
+
+/** 
+ * A function in Viper represents a mathematical function and can be used 
+ * in specifications and annotations, unlike methods. Because of that,
+ * functions must be deterministic and side-effect-free.
+ *
+ * This function computes the length of a list recursively.
+ */
+function length(xs: List[Int]): Int
+  /** 
+   * Viper allows defining pre- and postconditions for functions. In this
+   * example, we only use postconditions, which are introduced with a 'ensures' 
+   * keyword. The verifier will attempt to prove that the postcondition holds. 
+   * To reference the return value of the function in a postcondition, we use the
+   * keyword 'result'.
+   */
+  ensures result >= 0                                     
+  ensures xs.isNil ==> result == 0                        
+  ensures (xs.isCons ==> result == length(xs.tail) + 1)   
+  /** 
+   * Unlike Dafny, Viper does not check for termination by default. To enable termination 
+   * checking, we use a decreases clause. Here we have to specify the list parameter xs as 
+   * the variable to prove termination upon. In each recursive call, the list gets one element
+   * shorter. For this proof to work, we need the well-founded order on lists imported above.
+   */
+  decreases xs
+{
+  /**
+   * Viper does not have a 'match' statement. All examples in Dafny that 
+   * use this feature are translated to use destructors instead.
+   */
+  xs.isNil ? 0 : (1 + length(xs.tail))
+}
+
+/** 
+ *  Snoc (cons backward) appends the element x to the back of the list xs. 
+ */
+function Snoc(xs: List[Int], x: Int): List[Int]
+  ensures xs.isNil ==> result == Cons(x, Nil())
+  ensures xs.isCons ==> result == Cons(xs.value, Snoc(xs.tail, x))
+  decreases xs
+{
+  xs.isNil ? Cons(x, Nil()) : Cons(xs.value, Snoc(xs.tail, x))
+}
+
+
+/** 
+ * There is no special syntax for lemmas in Viper. As lemmas need to be called in
+ * contexts sometimes, we use functions to model lemmas. The return
+ * type of the function will be set to Unit to not accidentally confuse a
+ * lemma function with an actual function. 
+ */
+function lemmaLengthSnoc(xs: List[Int], x: Int): Unit
+  ensures length(Snoc(xs, x)) == length(xs) + 1
+  decreases xs
+{
+  /** 
+   * The body of a Viper function consists of a single expression, so `if-else` statements
+   * cannot be used. Instead, we use conditional expressions using the ternary operator '?'.
+   */
+  xs.isNil ? unit() : lemmaLengthSnoc(xs.tail, x)
+}                                             

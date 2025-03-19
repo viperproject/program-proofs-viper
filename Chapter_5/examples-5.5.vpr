@@ -1,0 +1,33 @@
+function Reduce(m: Int, x: Int): Int
+  decreases m
+  requires 0 <= m
+{ 
+  m == 0 ? x : Reduce(m/2, x+1) - m
+}
+
+/* lemma */
+method ReduceUpperBound(m: Int, x: Int)
+  decreases m
+  requires 0 <= m
+  ensures Reduce(m, x) <= x
+{
+
+  if (m == 0) {
+    // trivial
+  } else {
+    ReduceUpperBound(m/2, x+1)
+  }
+}
+
+/* lemma */
+method ReduceLowerBound(m: Int, x: Int)
+  decreases m
+  requires 0 <= m
+  ensures x - 2*m <= Reduce(m, x)  // this is the postcondition from the text; the stronger postcondition from the exercise ('<') does not hold for m==0
+{
+  if (m == 0) {
+    // trivial
+  } else {
+    ReduceLowerBound(m/2, x+1)
+  }
+}

@@ -1,0 +1,79 @@
+import "examples-6.6.vpr"
+
+//Exercise 6.19
+/**
+ * This lemma proves that the length of the list returned by ReverseAux
+ * is equal to the length of the two input lists.
+ */
+function lemmaLengthReverseAux(xs: List[Int], ac: List[Int]): Unit
+  ensures length(ReverseAux(xs, ac)) == length(xs) + length(ac)
+  decreases xs
+{
+  xs.isNil ? unit() : let _0 == (lemmaReverseAuxCorrect(xs, ac)) in
+                          let _1 == (lemmaLengthAppend(Reverse(xs), ac)) in
+                          let _2 == (lemmaLengthReverse(xs)) in 
+                          lemmaLengthReverseAux(xs.tail, ac)
+}
+
+//Exercise 6.20
+/**
+ * This function proves that the length of a reversed list is
+ * the same length as the original list. We have already proven
+ * this fact with SlowReverse. Here we prove it for Reverse.
+ */
+function lemmaAlternativeLengthReverse(xs: List[Int]): Unit
+  ensures length(Reverse(xs)) == length(xs)
+  decreases xs
+{
+  xs.isNil ? unit() : let _ == (lemmaLengthReverseAux(xs, Nil())) in 
+                          lemmaAlternativeLengthReverse(xs.tail)
+}
+
+//Exercise 6.21
+function lemmaReverseAuxAppend(xs: List[Int], ys: List[Int], ac: List[Int]): Unit
+  ensures ReverseAux(append(xs, ys), ac) == append(Reverse(ys), ReverseAux(xs, ac))
+  decreases xs
+{
+  xs.isNil ? let _ == (lemmaReverseAuxCorrect(ys, ac)) in 
+              unit() 
+              : 
+              lemmaReverseAuxAppend(xs.tail, ys, Cons(xs.value, ac))
+}
+
+//Exercise 6.22
+/**
+ * This function should prove that reversing two lists that have been appended
+ * is the same as first reversing two lists and then appending them reversed order.
+ */
+function lemmaReverseAppend(xs: List[Int], ys: List[Int]): Unit
+  ensures Reverse(append(xs, ys)) == append(Reverse(ys), Reverse(xs))
+  decreases xs
+{
+  xs.isNil ? let _0 == (lemmaAppendNil(ys)) in 
+                  let _1 ==(lemmaAppendNil(Reverse(ys))) in
+                  unit()
+                  : 
+                  let _0 == (lemmaReverseAuxAppend(xs, ys, Nil())) in 
+                  lemmaReverseAppend(xs.tail, ys)
+}
+
+//Exercise 6.23
+/**
+ * This lemma proves that the Reverse function is
+ * an involution, so that if we reverse a list twice, 
+ * we get the original List back.
+ */
+function lemmaReverseReverse(xs: List[Int]): Unit
+  ensures Reverse(Reverse(xs)) == xs
+{
+  xs.isNil ? (unit()) : let _0 == (lemmaReverseAuxSlowCorrect(xs.tail, Cons(xs.value, Nil()))) in 
+                            let _1 == (lemmaReverseCorrect(xs.tail)) in 
+                            let _2 == (lemmaReverseAppend(Reverse(xs.tail), Cons(xs.value, Nil()))) in 
+                            let _3 == (lemmaReverseAuxCorrect(Cons(xs.value, Nil()), xs.tail)) in 
+                            /**
+                             * In this step _4, we had to explicitly mention the equality
+                             * between those two statements.
+                             */
+                            let _4 == (ReverseAux(Cons(xs.value, Nil()), xs.tail) == ReverseAux(Nil(), xs)) in
+                            lemmaReverseReverse(xs.tail)
+}

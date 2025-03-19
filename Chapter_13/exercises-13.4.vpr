@@ -1,0 +1,5 @@
+//Exercise 13.13
+/**
+ * Viper treats multiset intersection as a commutative operation, so the lemma
+ * is applicable to both cases already.
+ */

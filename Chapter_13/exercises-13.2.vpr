@@ -1,0 +1,183 @@
+import "Array.vpr"
+
+//Exercise 13.3
+/**
+ * In this exercise, we are asked to write a quantified expression which 
+ * ensures that all elements in the array are strictly increasing. 
+ */
+method StrictlyIncreasing(a: Array[Int])
+    requires iarrayAccessRead(a)
+    requires forall i: Int, j: Int :: 0 <= i < j < len(a) ==>
+        iarrayLookup(a, i) < iarrayLookup(a, j)
+
+//Exercise 13.4
+/**
+ * We are asked to prove the following lemma: if we have an array sorted in 
+ * increasing order, then any two random elements i and j, where j is greater
+ * than i, will also be sorted in increasing order.
+ */
+function lemmaSortedTransitive(a: Array[Int], i: Int, j: Int): Unit
+    requires iarrayAccessRead(a)
+    requires forall k: Int :: 0 <= k < len(a) - 1 ==>
+        iarrayLookup(a, k) <= iarrayLookup(a, k + 1)
+    requires 0 <= i < j < len(a)
+    ensures iarrayLookup(a, i) <= iarrayLookup(a, j)
+{
+    /**
+     * For this proof we either have the base case where the two adjacent
+     * elements i and j == i + 1 fulfill the condition or we have the recursive
+     * case where we prove that if we bring j closer to i, we'll reach the base
+     * case eventually. The verifier figures this out by itself.
+     */
+    j - i == 1 ? unit() : lemmaSortedTransitive(a, i, j - 1)
+}
+
+//Exercise 13.5
+/**
+ * We are asked to change one line in the original binary search method from 
+ * 13.2.2 and to have a look at what the verifier reports. 
+ * Viper will not report this change as an error because Viper does not check 
+ * for loop termination without a decreases clause. With a decreases clause,
+ * the verifier would reject it. Due to the way mid is calculated and relies on
+ * integer roundoff, it could get stuck on an index and run forever. This would
+ * happen for an array with elements [1,3,5,7] and key = 6 for example.
+ */
+method FlawedBinarySearch(a: Array[Int], key: Int) returns (n: Int)
+    requires iarrayAccessRead(a) && iarraySorted(a)
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures 0 <= n <= len(a)
+    ensures forall i: Int :: 0 <= i < n ==> iarrayLookup(a, i) < key
+    ensures forall i: Int :: n <= i < len(a) ==> key <= iarrayLookup(a, i)
+{
+    var lo: Int := 0 
+    var hi: Int := len(a)
+    while (lo < hi)
+        invariant iarrayAccessRead(a) && iarrayUntouched(a)
+        invariant 0 <= lo <= hi <= len(a)
+        invariant forall i: Int :: 0 <= i < lo ==> iarrayLookup(a, i) < key
+        invariant forall i: Int :: hi <= i < len(a) ==> 
+            key <= iarrayLookup(a, i)
+        // decreases hi - lo
+    {
+        var mid: Int := (lo + hi) / 2
+        if (iarrayLookup(a, mid) < key)
+        {
+            lo := mid
+            // lo := mid + 1 // This is the correct statement
+        }
+        else
+        {
+            hi := mid
+        }
+    }
+    n := lo
+}
+
+//Exercise 13.6
+/**
+ * We are asked to write a binary search variant which will return the latest 
+ * insertion point for the key, meaning the index after all elements that are
+ * less than or equal to the key.
+ */
+method BinarySearchLatestInsertionPoint(a: Array[Int], key: Int) returns (n: Int)
+    requires iarrayAccessRead(a) && iarraySorted(a)
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures 0 <= n <= len(a)
+    ensures forall i: Int :: 0 <= i < n ==> iarrayLookup(a, i) <= key
+    ensures forall i: Int :: n <= i < len(a) ==> key < iarrayLookup(a, i)
+    ensures forall i: Int :: 0 <= i < len(a) && iarrayLookup(a, i) == key ==>
+        i < n
+{
+    var lo: Int := 0 
+    var hi: Int := len(a)
+    while (lo < hi)
+        invariant iarrayAccessRead(a) && iarrayUntouched(a)
+        invariant 0 <= lo <= hi <= len(a)
+        invariant forall i: Int :: 0 <= i < lo ==> iarrayLookup(a, i) <= key
+        invariant forall i: Int :: hi <= i < len(a) ==> 
+            key < iarrayLookup(a, i)
+    {
+        var mid: Int := (lo + hi) / 2
+        if (iarrayLookup(a, mid) <= key)
+        {
+            lo := mid + 1
+        }
+        else
+        {
+            hi := mid
+        }
+    }
+    n := lo
+}
+
+//Exercise 13.7
+/**
+ * We are asked to write a binary search variant which will return any 
+ * occurence of the key or -1 if the key is not in the array.
+ */
+method BinarySearchAnyKey(a: Array[Int], key: Int) returns (n: Int)
+    requires iarrayAccessRead(a) && iarraySorted(a)
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures 0 <= n < len(a) ==> iarrayLookup(a, n) == key
+    ensures n == -1 ==> forall i: Int :: 0 <= i < len(a) ==> 
+        iarrayLookup(a, i) != key
+{
+    var lo: Int := 0 
+    var hi: Int := len(a)
+    n := -1
+    while (lo < hi && n == -1)
+        invariant iarrayAccessRead(a) && iarrayUntouched(a)
+        invariant 0 <= lo <= hi <= len(a)
+        invariant n != -1 ==> 0 <= n < len(a) && iarrayLookup(a, n) == key
+        invariant n == -1 ==> forall i: Int :: 0 <= i < lo ==> iarrayLookup(a, i) != key
+        invariant n == -1 ==> forall i: Int :: hi <= i < len(a) ==> iarrayLookup(a, i) != key 
+    {
+        var mid: Int := (lo + hi) / 2
+        if (iarrayLookup(a, mid) == key)
+        {
+            n := mid
+        }
+        elseif (iarrayLookup(a, mid) < key)
+        {
+            lo := mid + 1
+        }
+        else
+        {
+            hi := mid
+        }
+    }
+}
+
+//Exercise 13.8
+/**
+ * We are asked to write a binary search variant which searches over an array 
+ * that is guaranteed to contain the key and simplify the method.
+ * It will return any occurence of the key. There is not much to simplify
+ * beyond the pre- and postconditions.
+ */
+method BinarySearchKeyInArray(a: Array[Int], key: Int) returns (n: Int)
+    requires iarrayAccessRead(a) && iarraySorted(a)
+    requires exists i: Int :: 0 <= i < len(a) && iarrayLookup(a, i) == key
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures 0 <= n < len(a) && iarrayLookup(a, n) == key
+{
+    var lo: Int := 0 
+    var hi: Int := len(a)
+    while (lo < hi)
+        invariant iarrayAccessRead(a) && iarrayUntouched(a)
+        invariant 0 <= lo <= hi <= len(a)
+        invariant forall i: Int :: 0 <= i < lo ==> iarrayLookup(a, i) < key
+        invariant forall i: Int :: hi <= i < len(a) ==> key <= iarrayLookup(a, i)
+    {
+        var mid: Int := (lo + hi) / 2
+        if (iarrayLookup(a, mid) < key)
+        {
+            lo := mid + 1
+        }
+        else
+        {
+            hi := mid
+        }
+    }
+    n := lo
+}

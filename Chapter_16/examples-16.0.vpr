@@ -1,0 +1,195 @@
+/**
+ * In this section, we will once again not use strings and just use the sum of
+ * the ASCII values of the characters as input. Therefore this "hash" function
+ * just takes a modulo of the already summed up values. This also makes the
+ * SumChars method from the book redundant.
+ */
+function Hash(s: Int): Int
+{
+    s % 137
+}
+
+field checksumData: Int
+
+/**
+ * Viper does not have classes as they are known in object-oriented programming
+ * languages. We instead use Viper predicates to describe heap data structures. 
+ * Viper predicates are parametrized assertions, which means that they prove
+ * the same assertions on varying input. Therefore, we can always check whether
+ * a set of fields, which are relevant for the data structure we are describing,
+ * conforms to its expected behavior.
+ * Viper predicates can be used recursively to describe recursive and 
+ * potentially unbounded data structures such as linked lists or binary trees,
+ * for example. Predicates can be used by any method or function as a 
+ * precondition to declare access to the fields they describe and ensure that 
+ * we work with a valid version of the data structure.
+ * This is equivalent to a method or function belonging to a class in an 
+ * object-oriented programming language.
+ * In this case we define a predicate ChecksumMachine that takes a reference, 
+ * checks access to the checksumData field and ensures that the checksumData
+ * field is always non-negative, because sums of ASCII values are always
+ * non-negative.
+ */
+predicate ChecksumMachine(this: Ref)
+{
+    acc(this.checksumData) && 0 <= this.checksumData 
+}
+
+/**
+ * In object-oriented programming languages, constructors are methods that set
+ * up the initial state of an object during the objects creation. In Viper, we
+ * can model this behaviour through a method that has the ChecksumMachine
+ * predicate as a postcondition. This ensures that we provide a fresh reference
+ * to a valid ChecksumMachine. 
+ * For that, we define a reference to the relevant fields using the new keyword.
+ * The new keyword only provides access to the specified fields. If we try to 
+ * access another field through this reference, verification will not succeed. 
+ * Every call to new() creates a new reference to the requested fields, which
+ * is independent from all other references created before. We then set the
+ * checksumData field to 0 to satisfy the ChecksumMachine predicate.
+ * A predicate instance is not equivalent to the corresponding instantiation of
+ * its body. But Viper provides a way to switch between the two using the fold
+ * and unfold keywords. The fold keyword is used to switch from the predicate 
+ * body to the predicate instance and the unfold keyword does the reverse 
+ * operation. If we want to access the fields of a predicate, we have to unfold
+ * the predicate first. All the assertions of the predicate will be transferred
+ * to the method body after that.
+ * To satisfy the postcondition, we therefore have to fold the ChecksumMachine
+ * predicate after setting up all of the required fields in a correct fashion.
+ * If we want to reference the checksumData field in a pre- or postcondition or
+ * in a function body, we have to use the unfolding keyword to access the body
+ * of the predicate.
+ */
+method ChecksumMachineConstructor() returns (this: Ref)
+    ensures ChecksumMachine(this)
+    ensures unfolding ChecksumMachine(this) in this.checksumData == 0
+{
+    this := new(checksumData)
+    this.checksumData := 0
+    fold ChecksumMachine(this)
+}
+
+/**
+ * This function returns the content of the checksumData field of a 
+ * ChecksumMachine.
+ * Referencing the ChecksumMachine predicate in a pre- or postcondition is just
+ * a shorthand for using the accessibility predicate acc on it 
+ * acc(ChecksumMachine(this)). This translates to requesting access to the 
+ * fields of the ChecksumMachine predicate. Therefore, we can also request 
+ * fractional permissions of the predicate to provide read access, for example.
+ * We have to use this syntax for every operation that interacts with the 
+ * predicate, such as fold, unfold, and unfolding.
+ * Because this can be seen as an auxiliary way to access the content of the
+ * checksumData field without having to unfold the predicate, we must add the
+ * validity conditions of the predicate, which impact the checksumData field, to
+ * the postcondition of the function. Otherwise important information about the
+ * content of the field will still only be accessible through the predicate.
+ */
+function getChecksumData(this: Ref): Int
+    requires acc(ChecksumMachine(this), 1/2)
+    ensures 0 <= result
+{
+    unfolding acc(ChecksumMachine(this), 1/2) in
+    this.checksumData
+}
+
+/**
+ * This method adds a given integer to the checksumData field. Contrary to its
+ * name, it does not append anything, because we interpret strings as the sum 
+ * of their ASCII character values anyway.
+ * As a postcondition, we want to specify that the checksumData field has been
+ * incremented by d. For that, we need the old() expression to access the value
+ * of the checksumData field at the beginning of the method. If the 
+ * accessibility predicate is hidden behind a predicate, the predicate has to 
+ * be unfolded separately inside the old() expression to reveal it to the 
+ * expression. This looks unintuitive. It is much more readable to use the 
+ * previously defined getChecksumData function to evaluate the checksumData
+ * field inside the old expression. The long version is left here as a 
+ * comparison. Both versions are equivalent and verify. If we want to have the
+ * information from the assertions within the predicate in our current context,
+ * we have to unfold the predicate instead of using the getChecksumData 
+ * function.
+ */
+method Append(this: Ref, d: Int)
+    requires ChecksumMachine(this)
+    requires 0 <= d
+    ensures ChecksumMachine(this)
+    ensures getChecksumData(this) == old(getChecksumData(this)) + d
+    // ensures unfolding ChecksumMachine(this) in this.checksumData == old(unfolding ChecksumMachine(this) in this.checksumData) + d
+{
+    unfold ChecksumMachine(this)
+    this.checksumData := this.checksumData + d
+    fold ChecksumMachine(this)
+}
+
+/**
+ * This function calculates the checksumData field modulo 137, which is 
+ * equivalent to the Hash function we defined above, due to our choice of 
+ * implementation for strings. Nevertheless, we can use the Hash function as a
+ * check in the postcondition to ensure correct behavior.
+ */
+function Checksum(this: Ref): Int
+    requires acc(ChecksumMachine(this), 1/2)
+    ensures result == Hash(getChecksumData(this))
+{
+    unfolding acc(ChecksumMachine(this), 1/2) in
+    this.checksumData % 137
+}
+
+/**
+ * This method checks our ChecksumMachine implementation for correctness by
+ * creating a new ChecksumMachine, appending two strings to it, taking the
+ * checksum and comparing it to the expected value.
+ * For all intents and purposes, our ChecksumMachine implementation is behaving
+ * equivalent to the class-based Dafny version.
+ */
+method ChecksumMachineTestHarness()
+{
+    var m: Ref := ChecksumMachineConstructor()
+    Append(m, 529) // "Green"
+    Append(m, 544) // "Grass"
+    var c: Int := Checksum(m)
+    assert c == (529 + 544) % 137 
+}
+
+/**
+ * Due to our implementation choice, the proposed modification of the class to
+ * use the checksumData field for data and the checksumCS field for the 
+ * checksum does not make much sense. For the sake of demonstration, we will
+ * create the basics for this implementation.
+ */
+field checksumCS: Int
+
+/**
+ * This function checks whether the checksumCS field contains the correct 
+ * checksum. In the Dafny version, the Valid Dafny predicate accesses the class
+ * variables directly. In Viper, we can use our validity check inside the 
+ * Viper predicate because all statements inside the predicate have to evaluate
+ * to true to pass verification. But because predicates have to be self-framing,
+ * we cannot reference the predicate inside a function that has to be evaluated
+ * inside the predicate. Therefore we just pass the parameters into the 
+ * function.
+ */
+function Valid(cs: Int, data: Int): Bool
+{
+    cs == Hash(data)
+}
+
+/**
+ * This is the modified predicate for the ChecksumMachine class which 
+ * differentiates between data and checksum. Additionally, the valid function
+ * is included in the predicate, because all the methods and functions that 
+ * require the predicate also have to be valid. 
+ * Through that, the predicate itself can be seen as a valid function, because
+ * it is a bunch of assertions that have to evaluate to true upon invocation.
+ * Any action which breaks validity should be done and rectified within a 
+ * method or function.
+ */
+predicate ChecksumMachine2(this: Ref)
+{
+    acc(this.checksumData) && 0 <= this.checksumData &&
+    acc(this.checksumCS) && 0 <= this.checksumCS && 
+    Valid(this.checksumCS, this.checksumData)
+}
+
+

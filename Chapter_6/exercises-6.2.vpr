@@ -1,0 +1,112 @@
+import "examples-6.2.vpr"
+
+
+//Exercise 6.3
+/** 
+ * Automatic induction
+ */
+
+//Exercise 6.4 
+/** 
+ * Automatic induction
+ */
+
+//Exercise 6.5
+function lemmaAppendDecomposition(as: List[Int], bs: List[Int], cs: List[Int], ds: List[Int]): Unit
+  requires length(as) == length(cs)
+  requires append(as, bs) == append(cs, ds)
+  ensures as == cs && bs == ds
+  decreases as
+{
+  /** 
+   * In this lemma we have to do the induction on as, as well as cs. This is because
+   * of the precondition stating length(as) == length(cs). If we did not include cs
+   * in the induction, the precondition of the lemma would no longer be satisfied. 
+   */
+  as.isNil ? unit() : lemmaAppendDecomposition(as.tail, bs, cs.tail, ds)
+}
+
+//Exercise 6.6 
+/** 
+ * In this exercise we define a function and a left a right unit with respect to the function. 
+ * We want to show that the two unit elements have to be equal.
+ */
+
+/** 
+ * The function is defined here. The behavior of the function will be defined
+ * further down using lemmas.
+ */
+function F66(x: Int, y: Int): Int
+  decreases
+
+/** 
+ * Viper does not support const declarations, so we use functions instead.
+ */
+function L66(): Int
+  decreases
+
+function R66(): Int
+  decreases
+
+/** 
+ * With the help of this lemma, we state that the left element is a unit with respect to the function.
+ *
+ * If we do not specify the body of a function, the verifier assumes that the postconditions hold.
+ */
+function lemmaLeftUnit66(x: Int): Unit
+  ensures F66(L66(), x) == x
+  decreases
+
+function lemmaRightUnit66(x: Int): Unit
+  ensures F66(x, R66()) == x
+  decreases
+
+/** 
+ * This lemma proves that the left and right unit elements have to be equal.
+ */
+function lemmaLequalR66(): Unit
+  ensures L66() == R66() 
+  decreases 
+{ 
+  /** 
+   * With the help of a let expression, we can call a functions and assign the result of those
+   * functions to a variable, which can then be used in a following expression. The
+   * structure of let expression is 'let variable == (term) in e'.
+   */
+  let _0 == (F66(L66(), R66())) in 
+  let _1 == (lemmaLeftUnit66(R66())) in 
+  let _2 == (lemmaRightUnit66(L66())) in 
+  unit()
+}
+
+//Exe 6.7
+/** 
+ * In this exercise, we are trying to prove the equality of a left and right zero
+ * element of a function. This case is almost identical to the last exercise.
+ */
+function F67(x: Int, y: Int): Int
+  decreases 
+
+function L67(): Int
+  decreases
+
+function R67(): Int
+  decreases
+
+function lemmaLeftUnit67(x: Int): Unit
+  ensures F67(L67(), x) == L67()
+  decreases
+
+function lemmaRightUnit67(x: Int): Unit
+  ensures F67(x, R67()) == R67()
+  decreases
+
+function lemmaLEqualR67(): Unit
+  ensures L67() == R67()
+  decreases
+{
+  let _0 == (F67(L67(), R67())) in 
+  let _1 == (lemmaLeftUnit67(R67())) in 
+  let _2 == (lemmaRightUnit67(L67())) in 
+  unit()
+}

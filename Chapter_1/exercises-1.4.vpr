@@ -1,0 +1,43 @@
+method MaxSum(x: Int, y: Int) returns (s: Int, m: Int)
+ensures s == x + y
+ensures m >= x && m >= y
+ensures m == x || m == y
+{
+    s := x + y
+    if(x > y){
+        m := x
+    } else {
+        m := y
+    }
+}
+
+
+method MaxSumCall()
+{
+    var s: Int
+    var m: Int
+    s, m := MaxSum(1928, 1)
+    assert s == 1929
+    assert m == 1928
+}
+
+method Reconstruct(s: Int, m: Int) returns (x: Int, y: Int)
+requires s - m <= m
+ensures s == x + y
+ensures m >= x && m >= y
+ensures m == x || m == y
+{
+    x := m
+    y := s - m
+}
+
+method TestMaxSum(x: Int, y: Int) 
+{
+    var s: Int
+    var m: Int
+    s, m := MaxSum(x, y)
+    var xx: Int
+    var yy: Int
+    xx, yy := Reconstruct(s, m)
+    assert (xx == x && yy == y) || (xx == y && yy == x)
+}

@@ -1,0 +1,32 @@
+import "examples-4.0.vpr"
+
+function ReverseColors(t: BYTree): BYTree
+{
+    t.isBlueLeaf ? YellowLeaf() : t.isYellowLeaf ? BlueLeaf() : Node(ReverseColors(t.left), ReverseColors(t.right))   
+}
+
+method TestReverseColors()
+{
+    var blue: BYTree := BlueLeaf()
+    var yell: BYTree := YellowLeaf()
+
+    var c: BYTree := Node(BlueLeaf(), YellowLeaf())
+    var d: BYTree := Node(YellowLeaf(), BlueLeaf())
+
+    var a: BYTree := Node(BlueLeaf(), Node(BlueLeaf(), YellowLeaf()))
+    var b: BYTree := Node(YellowLeaf(), Node(YellowLeaf(), BlueLeaf()))
+    
+    // Viper requires these intermediate asserts to prove the final two
+    assert ReverseColors(blue) == yell
+    assert ReverseColors(yell) == blue
+    assert ReverseColors(c) == d
+    assert ReverseColors(d) == c
+    
+    assert ReverseColors(a) == b
+    assert ReverseColors(b) == a
+}
+
+function Oceanize(t: BYTree): BYTree
+{
+    t.isBlueLeaf ? BlueLeaf() : t.isYellowLeaf ? BlueLeaf() : Node(Oceanize(t.left), Oceanize(t.right))
+}

@@ -1,0 +1,269 @@
+import "examples-15.2.vpr"
+// import "../Chapter_10/examples-10.3.vpr"
+
+// Exercise 15.5
+/**
+ * This method is a variation of the partition step from the quicksort examples,
+ * where we choose the median element of either the beginning, the middle or 
+ * the end of the sector we want to partition as pivot. With all pre- and
+ * postcondition otherwise being equal, this version will verify for the
+ * other outside quicksort methods.
+ */
+method PartitionMedian(a: Array[Int], lo: Int, hi: Int) returns (p: Int)
+    requires 0 <= lo < hi <= len(a)
+    requires iarrayAccessFull(a)
+    requires SplitPoint(a, lo) && SplitPoint(a, hi)
+    ensures lo <= p < hi
+    ensures iarrayAccessFull(a)
+    ensures forall i: Int :: lo <= i < p ==> iarrayLookup(a, i) < iarrayLookup(a, p)
+    ensures forall i: Int :: p <= i < hi ==> iarrayLookup(a, p) <= iarrayLookup(a, i)
+    ensures SplitPoint(a, lo) && SplitPoint(a, hi)
+    ensures SwapFrame(a, lo, hi)
+    decreases hi - lo
+{
+    var p0: Int := iarrayLookup(a, lo)
+    var p1: Int := iarrayLookup(a, (lo + hi) / 2)
+    var p2: Int := iarrayLookup(a, hi - 1)
+    var tmp: Int
+    if (p0 <= p1 <= p2 || p2 <= p1 <= p0)
+    {
+        tmp := iarrayLookup(a, (lo + hi) / 2)
+        iarrayUpdate(a, (lo + hi) / 2, iarrayLookup(a, lo))
+        iarrayUpdate(a, lo, tmp)
+    } 
+    elseif (p1 <= p2 <= p0 || p0 <= p2 <= p1)
+    {
+        tmp := iarrayLookup(a, hi - 1)
+        iarrayUpdate(a, hi - 1, iarrayLookup(a, lo))
+        iarrayUpdate(a, lo, tmp)
+    }
+    var pivot: Int := iarrayLookup(a, lo)
+    var m: Int := lo + 1
+    var n: Int := hi
+    while (m < n)
+        invariant lo + 1 <= m <= n <= hi
+        invariant iarrayAccessFull(a)
+        invariant iarrayLookup(a, lo) == pivot
+        invariant forall i: Int :: lo + 1 <= i < m ==> iarrayLookup(a, i) < pivot
+        invariant forall i: Int :: n <= i < hi ==> pivot <= iarrayLookup(a, i)
+        invariant SplitPoint(a, lo) && SplitPoint(a, hi)
+        invariant SwapFrame(a, lo, hi)
+        decreases n - m
+    {
+        if (iarrayLookup(a, m) < pivot)
+        {
+            m := m + 1
+        }
+        else
+        {
+            var tmpLoop: Int := iarrayLookup(a, m)
+            iarrayUpdate(a, m, iarrayLookup(a, n - 1))
+            iarrayUpdate(a, n - 1, tmpLoop)
+            n := n - 1
+        }
+    }
+    tmp := iarrayLookup(a, lo)
+    iarrayUpdate(a, lo, iarrayLookup(a, m - 1))
+    iarrayUpdate(a, m - 1, tmp)
+    p := m - 1
+}
+
+//Exercise 15.6
+// TODO, PQueue is unusable, needs additions
+/* method PriorityQueueSort(a: Array[Int])
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures iarraySorted(a)
+    // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+{
+    var pQueue: PQueue := Empty()
+    var i: Int := 0
+    while (i < len(a))
+        invariant iarrayAccessFull(a)
+        // invariant Elements(pQueue) == old(multiset(iarrayTake(a, i)))
+    {
+        pQueue := Insert(pQueue, iarrayLookup(a, i))
+        i := i + 1
+    }
+    i := 0
+    var b: Array[Int] := iarrayInit(len(a))
+    while (i < len(a))
+        invariant iarrayAccessFull(b)
+        invariant 0 <= i <= len(a)
+        invariant forall j: Int, k: Int :: 0 <= j < k < i ==> iarrayLookup(b, j) <= iarrayLookup(b, k)
+        // invariant multiset(iarrayTake(b, i)) union Elements(pQueue) == old(multiset(iarrayTake(a, i)))
+    {
+        var res: Pair[Int, PQueue] := RemoveMin(pQueue)
+        iarrayUpdate(b, i, getLeft(res))
+        i := i + 1
+    }
+
+
+} */
+
+//Exercise 15.7
+/**
+ * This method merges two sorted integer arrays a and b into a new sorted array
+ * c. In the case where both a and b are empty, we return an empty array.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one value.
+ */
+method Merge(a: Array[Int], b: Array[Int]) returns (c: Array[Int])
+    requires iarrayAccessRead(a) && iarrayAccessRead(b)
+    requires iarraySorted(a) && iarraySorted(b)
+    ensures iarrayAccessRead(a) && iarrayAccessRead(b)
+    ensures iarrayAccessFull(c)
+    ensures iarraySorted(c)
+    // ensures multiset(iarrayFull(c)) == multiset(iarrayFull(a)) union multiset(iarrayFull(b))
+{
+    if (len(a) == 0 && len(b) == 0)
+    {
+        c := iarrayInit(0)
+    }
+    else 
+    {
+        var i: Int := 0
+        var j: Int := 0
+        var k: Int := 0
+        c := iarrayInit(len(a) + len(b))
+        while (i < len(a) + len(b))
+            invariant 0 <= i <= len(a) + len(b)
+            invariant 0 <= j <= len(a)
+            invariant 0 <= k <= len(b)
+            invariant j + k == i
+            invariant iarrayAccessRead(a) && iarrayAccessRead(b)
+            invariant iarrayAccessFull(c)
+            invariant iarraySorted(a) && iarraySorted(b)
+            invariant forall l: Int, m: Int :: 0 <= l < m < i ==> iarrayLookup(c, l) <= iarrayLookup(c, m)
+            invariant j != len(a) ==> forall l: Int :: 0 <= l < i ==> iarrayLookup(c, l) <= iarrayLookup(a, j) 
+            invariant k != len(b) ==> forall l: Int :: 0 <= l < i ==> iarrayLookup(c, l) <= iarrayLookup(b, k)
+            // invariant multiset(iarrayTake(c, i)) == multiset(iarrayTake(a, j)) union multiset(iarrayTake(b, k))
+        {
+            if (j < len(a) && k < len(b))
+            {
+                if (iarrayLookup(a, j) <= iarrayLookup(b, k))
+                {
+                    iarrayUpdate(c, i, iarrayLookup(a, j))
+                    j := j + 1
+                }
+                else
+                {
+                    iarrayUpdate(c, i, iarrayLookup(b, k))
+                    k := k + 1
+                }
+            }
+            elseif (j < len(a))
+            {
+                iarrayUpdate(c, i, iarrayLookup(a, j))
+                j := j + 1
+            }
+            elseif (k < len(b))
+            {
+                iarrayUpdate(c, i, iarrayLookup(b, k))
+                k := k + 1
+            }
+            i := i + 1
+        }
+    }
+}
+
+//Exercise 15.8
+/**
+ * This method sorts an integer array a using the insertion sort algorithm.  In
+ * the case where a is empty or has a single element, we do nothing.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one value.
+ */
+method InsertionSort(a: Array[Int])
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures iarraySorted(a)
+    // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+{
+    if (len(a) > 1)
+    {
+        var i: Int := 1
+        while (i < len(a))
+            invariant 1 <= i <= len(a)
+            invariant iarrayAccessFull(a)
+            invariant forall j: Int, k: Int :: 0 <= j < k < i ==> iarrayLookup(a, j) <= iarrayLookup(a, k)
+            // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+        {
+            var j: Int := i
+            while (j > 0 && iarrayLookup(a, j - 1) > iarrayLookup(a, j))
+                invariant 0 <= j <= i
+                invariant iarrayAccessFull(a)
+                invariant forall k: Int, l: Int :: 0 <= k < l < j ==> iarrayLookup(a, k) <= iarrayLookup(a, l)
+                invariant forall k: Int, l: Int :: j <= k < l <= i ==> iarrayLookup(a, k) <= iarrayLookup(a, l)
+                invariant forall k: Int, l: Int :: 0 <= k < j < l <= i ==> iarrayLookup(a, k) <= iarrayLookup(a, l)
+                invariant forall k: Int :: j < k <= i ==> iarrayLookup(a, j) < iarrayLookup(a, k)
+                // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+            {
+                var tmp: Int := iarrayLookup(a, j)
+                iarrayUpdate(a, j, iarrayLookup(a, j - 1))
+                iarrayUpdate(a, j - 1, tmp)
+                j := j - 1
+                
+            }
+            i := i + 1
+        }
+    }
+}
+
+//Exercise 15.9
+
+/**
+ * This method sorts an integer array a with the insertion sort algorithm by
+ * saving the value of the element to be inserted, shifting the other elements
+ * up as needed, and then placing the saved value in its correct position, 
+ * rather than repeatedly swapping elements.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one value.
+ */
+method InsertionSortCopy(a: Array[Int])
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures iarraySorted(a)
+    // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+{
+    if (len(a) > 1)
+    {
+        var i: Int := 1
+        while (i < len(a))
+            invariant 1 <= i <= len(a)
+            invariant iarrayAccessFull(a)
+            invariant forall j: Int, k: Int :: 0 <= j < k < i ==> iarrayLookup(a, j) <= iarrayLookup(a, k)
+            // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+        {
+            var j: Int := i
+            var x: Int := iarrayLookup(a, i)
+            while (j > 0 && iarrayLookup(a, j - 1) > x)
+                invariant 0 <= j <= i
+                invariant iarrayAccessFull(a)
+                // invariant multiset(iarrayFull(a)[j := x]) == old(multiset(iarrayFull(a))) 
+            {
+                iarrayUpdate(a, j, iarrayLookup(a, j - 1))
+                j := j - 1
+            }
+            iarrayUpdate(a, j, x)
+        }
+    }
+}
+
+
+//Exercise 15.10
+/**
+ * Because we use a macro as a replacement for the Dafny two-state predicate,
+ * the replacement of the SwapFrame call with its parameterized content, is
+ * exactly what Viper does when expanding the macro internally. Therefore, this
+ * exercise is already solved by the macro implementation.
+ */

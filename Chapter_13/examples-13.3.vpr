@@ -1,0 +1,52 @@
+import "Array.vpr"
+
+/**
+ * This method finds a number m which is less or equal to all elements inside
+ * the array a. The result m does not have to be in the array.
+ */
+method MinFirst(a: Array[Int]) returns (m: Int)
+    requires iarrayAccessRead(a)
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures forall i: Int :: 0 <= i < len(a) ==> m <= iarrayLookup(a, i)
+{
+    var n: Int := 0
+    while (n != len(a))
+        invariant iarrayAccessRead(a) && iarrayUntouched(a)
+        invariant 0 <= n <= len(a)
+        invariant forall i: Int :: 0 <= i < n ==> m <= iarrayLookup(a, i)
+        {
+            if (iarrayLookup(a, n) < m)
+            {    
+                m := iarrayLookup(a, n)
+            }
+            n := n + 1
+        }
+}
+
+/**
+ * This method finds a number m which is less or equal to all elements inside
+ * the array a. The result m has to be in the array and therefore the array 
+ * must be non-empty.
+ */
+method Min(a: Array[Int]) returns (m: Int)
+    requires iarrayAccessRead(a)
+    requires len(a) != 0
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures forall i: Int :: 0 <= i < len(a) ==> m <= iarrayLookup(a, i)
+    ensures exists i: Int :: 0 <= i < len(a) && m == iarrayLookup(a, i)
+{
+    m := iarrayLookup(a, 0)
+    var n: Int := 0
+    while (n != len(a))
+        invariant iarrayAccessRead(a) && iarrayUntouched(a)
+        invariant 0 <= n <= len(a)
+        invariant forall i: Int :: 0 <= i < n ==> m <= iarrayLookup(a, i)
+        invariant exists i: Int :: 0 <= i < len(a) && m == iarrayLookup(a, i)
+        {
+            if (iarrayLookup(a, n) < m)
+            {    
+                m := iarrayLookup(a, n)
+            }
+            n := n + 1
+        }
+}

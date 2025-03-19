@@ -1,0 +1,76 @@
+import "../definitions.vpr"
+
+/**
+ * We also need to import the well-founded order for our new
+ * data type Braun Tree.
+ */
+import "BraunTree.vpr"
+
+/**
+ * In the book Program Proofs, they use modules to implement the priority queue. Viper does
+ * not support modules. We will simply create the functions and define them
+ * without using modules.
+ */
+
+/**
+ * For now we are only defining the signatures of the functions. The
+ * function bodies will be defined in later sections of this chapter.
+ *
+ * This function returns an empty PQueue.
+ */
+function Empty(): PQueue
+  decreases
+
+/**
+ * This function returns true if and only if the input
+ * is an empty PQueue. 
+ */
+function IsEmpty(pq: PQueue): Bool
+   decreases
+ 
+function Insert(pq: PQueue, y: Int): PQueue
+   decreases pq
+
+/**
+ * This function removes the smallest element in
+ * the PQueue.
+ */
+function RemoveMin(pq: PQueue): Pair[Int, PQueue]
+   requires !IsEmpty(pq)
+   decreases
+
+/**
+ * This function takes a queue and returns a multiset with all its elements.
+ */
+function Elements(pq: PQueue): Multiset[Int]
+    decreases
+
+/**
+ * This lemma proves that the elements of an Empty() PQueue are 
+ * an empty multiset.
+ */
+function lemmaEmptyCorrect(): Unit
+   ensures Elements(Empty()) == Multiset()
+   decreases
+ 
+function lemmaIsEmptyCorrect(pq: PQueue): Unit
+   ensures IsEmpty(pq) <==> Elements(pq) == Multiset()
+   decreases
+
+function lemmaInsertCorrect(pq: PQueue, y: Int): Unit
+   ensures Elements(Insert(pq, y)) == Elements(pq) union Multiset(y)
+   decreases
+
+function lemmaRemoveMinCorrect(pq: PQueue): Unit
+   requires !IsEmpty(pq)
+   ensures let a == (getLeft(RemoveMin(pq))) in 
+           let b == (getRight(RemoveMin(pq))) in
+           IsMin(a, Elements(pq)) && 
+           Elements(b) union Multiset(a) == Elements(pq)
+   decreases 
+
+function IsMin(y: Int, s: Multiset[Int]): Bool
+    decreases
+{
+    (y in s) > 0 && (forall x: Int :: (x in s) > 0 ==> y <= x)
+}

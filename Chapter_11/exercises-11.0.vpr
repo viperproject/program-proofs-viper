@@ -1,0 +1,272 @@
+//Exercise 11.0
+method Exercise1100()
+{
+    /**
+     * Here we create a variable x. This variable is 
+     * declared to be of type Int. We can now use it in the 
+     * scope of the method.
+     */
+    var x: Int
+    
+    /**
+     * a)
+     *
+     * The assertion at the end holds. This is because we only
+     * exit or do not enter the while loop if x == 100. The loop 
+     * invariant is met, since it is true, meaning every 
+     * possible state before would satisfy it.
+    */
+    x := 0
+    while (x != 100)
+        invariant true
+    {
+        x := x + 1
+    }  
+    assert x == 100
+}
+
+method Exercise1101()
+{
+    /**
+     * b)
+     *
+     * The loop invariant holds upon entry since 20 is 
+     * even. The assertion might not hold depending on the 
+     * function body. Since x could be any even number smaller
+     * or equal to 10.
+     */
+    var x: Int
+    x := 20
+    while(10 < x)
+        invariant x % 2 == 0
+    {
+        x := x - 2
+    }
+    //assert x == 10
+}
+
+method Exercise1102()
+{
+    /**
+     * c)
+     *
+     * The loop invariant holds upon entry since 20 is even.
+     * The assert does not hold as it is not guaranteed by the invariant.
+     */
+    var x: Int
+    x := 20
+    while(x < 20)
+        invariant x % 2 == 0
+    {
+        x := x - 2
+    }
+    //assert x == 20
+}
+
+method Exercise1103()
+{
+    /**
+     * d)
+     * 
+     * The loop invariant does not hold, since 3 is not even.
+     */
+    var x: Int
+    x := 3
+    while(x < 2)
+        //invariant x % 2 == 0
+    {
+        x := x - 2
+    }
+    //assert x % 2 == 0
+}
+
+method Exercise1104()
+{
+    /**
+     * e)
+     *
+     * This loop invariant does not hold, since x can
+     * be any number between 50 and 100 and does not necessarily
+     * have to be even. The assert would also fail, since x will
+     * be greater or equal to 85 when we exit the loop.
+     */
+    var x: Int
+    if (50 < x && x < 100) 
+    {
+        while(x < 85)
+            //invariant x % 2 == 0
+        {
+            x := x + 2
+        }
+        //assert x < 85 && x % 2 == 0 
+    }
+}
+
+method Exercise1105()
+{
+    /**
+     * f)
+     *
+     * The loop invariant might not hold, since x can
+     * be bigger than 0 and therefore also bigger than 100. The
+     * assert might fail as well since we could change the value
+     * of x in the while loop to something negative, which
+     * would still be smaller than 0.
+     */
+    var x: Int
+    if (0 <= x) 
+    {
+        while(x % 2 == 0)
+            //invariant x < 100
+        {
+            x := x - 1
+        }
+        //assert 0 <= x  
+    }
+}
+
+method Exercise1106()
+{
+    /**
+     * g)
+     *
+     * A loop body that satisfies the loop invariant will never terminate,
+     * as the invariant fulfills the loop condition.
+     */
+    var x: Int
+    x := 0
+    while(x < 100)
+        invariant 0 <= x && x < 100
+    {
+        x := 0
+    }
+    //assert x == 25
+}
+
+//Exercise 11.1
+/**
+ * In this exercise we have to give a possible value i after
+ * the loop to shows that the assert statement is not
+ * provable.
+ *
+ * In this exercise, the code has been commented out, as all of the
+ * assert statements cause verification errors. 
+ */
+method Exercise111()
+    decreases
+{
+    /**
+     * a)
+     * i := 0
+     * while(i < 100)
+     *     invariant 0 <= i
+     * assert i == 100
+     * 
+     * A possible i value that would violate the assert would
+     * be i == 101. 101 satisfies both i > 100 and 0 <= i.
+     */
+
+    /**
+     * b)
+     * i := 100
+     * while(0 < i)
+     *     invariant true
+     * assert i == 0
+     *
+     * A possible i value would be -1. This satisfies both
+     * 0 >= i and true.
+     */
+    
+    /**
+     * c)
+     * i := 0
+     * while(i < 97)
+     *     invariant 0 <= i && i <= 99
+     * assert i == 99
+     *
+     * A possible i that does not satisfy the assert would be 98.
+     * It satisfies both i >= 98 and 0 <= i && i <= 99.
+     */
+
+    /**
+     * d)
+     * i := 22
+     * while(i % 5 != 0)
+     *     invariant 10 <= i && i <= 100
+     * assert i == 55
+     *
+     * A possible i that does not satisfy the assert would be 
+     */
+}
+
+//Exercise 11.2
+/**
+ * In this exercise we have to strengthen the invariant, to be able
+ * to prove the assert statement at the end.
+ */ 
+method Exercise1120()
+{
+    var i: Int
+    /**
+     * a)
+     */
+    i := 0
+    while(i < 100)
+        invariant 0 <= i && i <= 100
+    {
+        i := i + 1
+    }
+    assert i == 100
+}
+
+method Exercise1121()
+{
+    var i: Int
+    /**
+     * b)
+     */
+    i := 100
+    while(0 < i)
+        invariant 0 <= i && i <= 100
+    {
+        i := i - 1
+    }
+    assert i == 0
+}
+
+method Exercise1122()
+{
+    var i: Int
+    /**
+     * c)
+     */
+    i := 0
+    while(i < 97)
+        invariant 0 <= i && i <= 99 && i != 98 && i != 97
+    {
+        if (i == 96)
+        {
+            i := i + 3
+        }
+        else 
+        {
+            i := i + 1
+        }
+    }
+    assert i == 99
+}
+
+method Exercise1123()
+{
+    var i: Int
+    /**
+     * d)
+     */
+    i := 22
+    while(i % 5 != 0)
+        invariant i % 11 == 0 && 22 <= i && i <= 55
+    {
+        i := i + 11
+    }
+    assert i == 55
+}

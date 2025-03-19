@@ -1,0 +1,235 @@
+import "examples-12.2.vpr"
+
+/**
+ * In this file, we also have to import the definition of
+ * lemmaAppendSumUp we defined in the exercise file, since
+ * we need it to prove certain loop invariants.
+ */
+import "exercises-12.3.vpr"
+
+/**
+ * We will create an uninterpreted function.
+ */
+function F(x: Int): Int
+    decreases
+
+/**
+ *
+ * This function calculates the sum of all numbers between
+ * the two input parameters.
+ */
+function SumUp(lo: Int, hi: Int): Int
+    requires lo <= hi
+    decreases hi - lo
+{
+    (lo == hi) ? 0 : F(lo) + SumUp(lo + 1, hi)
+}
+
+/**
+ * This function sums down, going in the opposite
+ * direction of the one above.
+ */
+function SumDown(lo: Int, hi: Int): Int
+    requires lo <= hi
+    decreases hi - lo
+{
+    (lo == hi) ? 0 : SumDown(lo, hi - 1) + F(hi - 1)
+}
+
+/**
+ * Both functions above should return the same result. We will
+ * prove this assumption in the lemma below.
+ */
+function lemmaSameSums(lo: Int, hi: Int) : Unit
+    requires lo <= hi
+    ensures SumUp(lo, hi) == SumDown(lo, hi)
+    decreases hi - lo
+{
+    (lo == hi) ? unit() 
+                : 
+                let _ == (lemmaSameSums(lo + 1, hi)) in 
+                lemmaPrependSumDown(lo, hi)
+}
+
+/**
+ * An auxiliary function to help us prove the lemma above.
+ */
+function lemmaPrependSumDown(lo: Int, hi: Int) : Unit
+    requires lo < hi
+    ensures F(lo) + SumDown(lo + 1, hi) == SumDown(lo, hi)
+    decreases hi - lo
+{
+    (lo < hi - 1) ? lemmaPrependSumDown(lo, hi - 1) 
+                    : 
+                    asserting(SumDown(lo, hi) == SumDown(lo, hi - 1) + F(hi - 1)) in unit()
+}
+
+/**
+ * Now we will compute the sum with the help of loops.
+ *
+ * I have commented out the postcondition of both functions,
+ * since they do not verify yet and we need to add an
+ * extra loop invariant. This will be done in LoopUp01 and
+ * LoopDown01.
+ */
+method LoopUp0(lo: Int, hi: Int) returns (s: Int)
+    requires lo <= hi
+    //ensures s == SumUp(lo, hi)
+    decreases
+{
+    s := 0
+    var i: Int := lo
+    while(i != hi)
+        invariant lo <= i && i <= hi
+        decreases hi - i
+    {
+        s := s + F(i)
+        i := i + 1
+    }
+}
+
+method LoopDown0(lo: Int, hi: Int) returns (s: Int)
+    requires lo <= hi
+    //ensures s == SumDown(lo, hi)
+    decreases
+{
+    s := 0
+    var i: Int := hi
+    while(i != lo)
+        invariant lo <= i && i <= hi
+        decreases i - lo
+    {
+        i := i - 1
+        s := s + F(i)
+    }
+}
+
+/**
+ * With the additional loop invariants, the postcondition can be verified.
+ */
+method LoopUp01(lo: Int, hi: Int) returns (s: Int)
+    requires lo <= hi
+    ensures s == SumUp(lo, hi)
+    decreases
+{
+    s := 0
+    var i: Int := lo
+    while(i != hi)
+        invariant lo <= i && i <= hi
+        invariant s == SumUp(lo, i)
+        decreases hi - i
+    {
+        s := s + F(i)
+        i := i + 1
+        var _ : Unit := lemmaAppendSumUp(lo, i)
+    }
+}
+
+method LoopDown01(lo: Int, hi: Int) returns (s: Int)
+    requires lo <= hi
+    ensures s == SumDown(lo, hi)
+    decreases
+{
+    s := 0
+    var i: Int := hi
+    while(i != lo)
+        invariant lo <= i && i <= hi
+        invariant s == SumDown(i, hi)
+        decreases i - lo
+    {
+        i := i - 1
+        s := s + F(i)
+        var _ : Unit := lemmaPrependSumDown(i, hi)
+    }
+}
+
+/**
+ * Here we have the different versions of the LoopUp and
+ * LoopDown functions.
+ *
+ * The LoopUp1 method uses the SumDown function to prove
+ * its postcondition, instead of using SumUp and then 
+ * having to establish the equality 
+ * SumUp(lo, hi -1) + F(hi - 1) == SumUp(lo, hi)
+ * with a lemma.
+ */
+method LoopUp1(lo: Int, hi: Int) returns (s: Int)
+    requires lo <= hi
+    ensures s == SumDown(lo, hi)
+    decreases
+{
+    s := 0
+    var i: Int := lo
+    while(i != hi)
+        invariant lo <= i && i <= hi
+        invariant s == SumDown(lo, i)
+        decreases hi - i
+    {
+        s := s + F(i)
+        i := i + 1
+    }
+}
+
+/**
+ * The LoopDown1 method goes the other way around. It
+ * uses SumUp to state its postcondition and its
+ * invariant and therefore does not need to 
+ * specify the equality  
+ * F(lo) + SumDown(lo + 1, hi) == SumDown(lo, hi)
+ * via a lemma.
+ */
+method LoopDown1(lo: Int, hi: Int) returns (s: Int)
+    requires lo <= hi
+    ensures s == SumUp(lo, hi)
+    decreases
+{
+    s := 0
+    var i: Int := hi
+    while(i != lo)
+        invariant lo <= i && i <= hi
+        invariant s == SumUp(i, hi)
+        decreases i - lo
+    {
+        i := i - 1
+        s := s + F(i)
+    }
+}
+
+/**
+ * These two methods have the equality we needed to provide
+ * in LoopUp01 and LoopDown01 directly in their respective loop invariant
+ * and they therefore do not need to state the lemmas.
+ */
+method LoopUp2(lo: Int, hi: Int) returns (s: Int)
+    requires lo <= hi
+    ensures s == SumUp(lo, hi)
+    decreases
+{
+    s := 0
+    var i: Int := lo
+    while(i != hi)
+        invariant lo <= i && i <= hi
+        invariant s + SumUp(i, hi) == SumUp(lo, hi)
+        decreases hi - i
+    {
+        s := s + F(i)
+        i := i + 1
+    }
+}
+
+method LoopDown2(lo: Int, hi: Int) returns (s: Int)
+    requires lo <= hi
+    ensures s == SumDown(lo, hi)
+    decreases
+{
+    s := 0
+    var i: Int := hi
+    while(i != lo)
+        invariant lo <= i && i <= hi
+        invariant s + SumDown(lo, i) == SumDown(lo, hi)
+        decreases i - lo
+    {
+        i := i - 1
+        s := s + F(i)
+    }
+}

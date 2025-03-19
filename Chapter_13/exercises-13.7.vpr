@@ -1,0 +1,137 @@
+import "../definitions.vpr"
+
+//Exercise 13.16
+/**
+ * We already proved those lemmas without automatic induction, as this feature 
+ * is not available in Viper.
+ */
+
+// Exercise 13.17
+// TODO EXERCISE 13.17
+// function Plateau(s: Seq[Int], lo: Int, hi: Int): Bool
+//     requires 0 <= lo <= hi <= |s|
+//     ensures result == forall i: Int :: lo <= i < hi ==> s[i] == s[lo]
+// {
+//     |s[lo..hi]| == 0 ? true
+//         :
+//         s[lo] == s[hi - 1] ? Plateau(s, lo, hi - 1) : false
+// }
+
+// method Client()
+// {
+//     var s: Seq[Int] := Seq(1, 1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4)
+//     var t: Seq[Int] := Seq(1)
+//     assert Plateau(t, 0, 1)
+//     assert forall i: Int, j: Int :: 0 <= i <= j <= |t| && Plateau(t, i, j) ==> |t[i..j]| <= 1
+//     assert forall i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| <= 5
+//     assert Plateau(s, 0, 3)
+//     assert s[0..3] == Seq(1, 1, 1)
+//     assert Plateau(s, 9, 13)
+// }
+
+// method lengthLongestPlateau(s: Seq[Int]) returns (maxLen: Int)
+//     requires |s| > 0
+//     ensures |s| <= 1 ==> maxLen == |s|
+//     ensures |s| > 1 ==> exists i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| == maxLen
+//     ensures |s| > 1 ==> forall i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| <= maxLen
+// {
+//     if (|s| <= 1)
+//     {
+//         maxLen := |s|
+//     }
+//     else
+//     {
+//         maxLen := 1
+//         var currentLen: Int := 1
+//         var k: Int := 1
+//         while (k < |s| - 1)
+//             invariant 0 <= currentLen <= maxLen
+//             invariant 1 <= k <= |s|
+//             invariant 0 <= k - currentLen <= k
+//             invariant Plateau(s, k - currentLen, k)
+//             invariant forall i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| <= maxLen || k <= j
+//             invariant exists i: Int, j: Int :: 0 <= i <= j <= k && Plateau(s, i, j) ==> |s[i..j]| == currentLen
+//         {
+//             assert forall i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| <= maxLen || k <= j
+//             assert Plateau(s, k - currentLen, k)
+//             // k := k + 1
+//             if (s[k - 1] == s[k])
+//             {
+//                 assert forall i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| <= maxLen || k <= j
+//                 assert s[k - 1] == s[k] && Plateau(s, k - currentLen, k) ==> s[k - currentLen] == s[k]
+//                 assert Plateau(s, k - currentLen, k + 1)
+//                 currentLen := currentLen + 1
+//                 assert Plateau(s, k + 1 - currentLen, k + 1)
+//                 if (currentLen > maxLen)
+//                 {
+//                     maxLen := currentLen
+//                 }
+//                 assert forall i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| <= maxLen || k <= j
+//             }
+//             else
+//             {
+//                 assert forall i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| <= maxLen || k <= j
+//                 currentLen := 1
+//                 assert forall i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| <= maxLen || k <= j
+//             }
+//             assert forall i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| <= maxLen || k <= j
+//             k := k + 1
+//             assert forall i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| <= maxLen || k <= j + 1
+//         }
+//         assert |s| == 1 ==> k == 1
+//         assert |s| == 1 ==> k > |s| - 1
+//         assert |s| == 1 ==> maxLen == 1
+//         assert k >= |s| - 1
+//         assert forall i: Int, j: Int :: 0 <= i <= j <= |s| && Plateau(s, i, j) ==> |s[i..j]| <= maxLen || k < j
+//     }
+//     assert |s| <= 1 ==> maxLen == |s| 
+// }
+
+//Exercise 13.18
+// TODO EXERCISE 13.18
+// method commonElement(s_1: Seq[Int], s_2: Seq[Int], s_3: Seq[Int]) returns (e: Int)
+//     requires forall i: Int, j: Int :: 0 <= i < j < |s_1| ==> s_1[i] <= s_1[j]
+//     requires forall i: Int, j: Int :: 0 <= i < j < |s_2| ==> s_2[i] <= s_2[j]
+//     requires forall i: Int, j: Int :: 0 <= i < j < |s_3| ==> s_3[i] <= s_3[j]
+//     requires exists i: Int, j: Int, k: Int :: 0 <= i < |s_1| && 0 <= j < |s_2| && 0 <= k < |s_3| ==> 
+//         s_1[i] == s_2[j] && s_2[j] == s_3[k] && s_1[i] == s_3[k]
+//     ensures exists i: Int, j: Int, k: Int :: 0 <= i < |s_1| && 0 <= j < |s_2| && 0 <= k < |s_3| ==> 
+//         s_1[i] == s_2[j] && s_2[j] == s_3[k] && s_1[i] == s_3[k] && e == s_1[i]
+// {
+//     var e_1: Int := 0
+//     var e_2: Int := 0
+//     var e_3: Int := 0
+//     while (e_1 < |s_1| && e_1 < |s_2| && e_3 < |s_3|)
+//         invariant 0 <= e_1 <= |s_1|
+//         invariant 0 <= e_2 <= |s_2|
+//         invariant 0 <= e_3 <= |s_3|
+//     {
+//         if (s_1[e_1] == s_2[e_2] && s_2[e_2] == s_3[e_3])
+//         {
+//             e := s_1[e_1]
+//             e_1 := |s_1|
+//             e_2 := |s_2|
+//             e_3 := |s_3|
+//         }
+//         elseif (s_1[e_1] < s_2[e_2] || s_1[e_1] < s_3[e_3])
+//         {
+//             e_1 := e_1 + 1
+//         }
+//         elseif (s_2[e_2] < s_1[e_1] || s_2[e_2] < s_3[e_3])
+//         {
+//             e_2 := e_2 + 1
+//         }
+//         else
+//         {
+//             e_3 := e_3 + 1
+//         }
+//     }
+// }
+
+//Exercise 13.19
+/**
+ * The statement "mid := (lo + hi) / 2" can be easily rewritten to avoid 
+ * overflow by using "mid := lo + (hi - lo) / 2". This calculates the middle
+ * through the difference between the two bounds, which is guaranteed to be
+ * smaller than the sum of the two bounds.
+ */

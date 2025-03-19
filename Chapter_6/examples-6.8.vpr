@@ -1,0 +1,8 @@
+/**
+ * Unlike Dafny, Viper does not support elision rules. For the examples in this section 
+ * therefore it does not make sense to be translated to Viper.
+ *
+ * Since we have been using a specific type, in our case Int, rather than
+ * a generic type, it would not make sense to use elision rules here
+ * anyways.
+ */

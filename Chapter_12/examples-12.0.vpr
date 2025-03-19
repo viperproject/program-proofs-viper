@@ -1,0 +1,46 @@
+import "../definitions.vpr"
+
+/**
+ * We take the definition of the Fibonacci sequence function from chapter 3.1
+ */
+function Fib(n: Int): Int
+    /**
+     * We need n to be a natural number. Otherwise the Fibonacci
+     * sequence will not be defined.
+     */
+    requires 0 <= n 
+    ensures 0 <= result
+    decreases n
+{
+    (n < 2) ? n : Fib(n - 2) + Fib(n - 1)
+}
+
+/**
+ * Now we will write a more efficient function for the calculation
+ * of the Fibonacci sequence using a loop inside a method.
+ */
+method ComputeFib(n: Int) returns (x: Int)
+    /**
+     * We again need n to be a natural number. We also want to ensure
+     * that our return value x will be positive.
+     */
+    requires 0 <= n 
+    ensures 0 <= x
+    ensures x == Fib(n)
+    decreases
+{
+    x := 0
+    var i: Int := 0
+    var y: Int := 1
+    var tmp: Int := x
+    while(i != n)
+        invariant 0 <= i && i <= n
+        invariant x == Fib(i) && y == Fib(i + 1)
+        decreases n - i
+    {
+        tmp := x
+        x := y
+        y := tmp + y
+        i := i + 1
+    }
+}

@@ -1,0 +1,63 @@
+import "examples-6.2.vpr"
+
+/**
+ * The function Take takes a list xs an integer n and returns a list containing the
+ * first n elements of xs.
+ * 
+ * In Dafny, a parameter of type nat is used. There are no built-in natural numbers
+ * in Viper. We therefore use an integer and we require n >= 0 as a precondition.
+ * Without this precondition, the induction would fail, taking a negative number of 
+ * elements from a list is not possible anyways.
+ */
+function Take(xs: List[Int], n: Int): List[Int]
+  requires n >= 0 
+  requires n <= length(xs)
+  decreases xs
+{
+  (n==0) ? Nil() : Cons(xs.value, Take(xs.tail, n-1))
+}
+
+/**
+ * Drop drops the first n elements of the list and returns the last (length(xs) - n)
+ * elements of the original list xs.
+ *
+ * We again use a precondition to ensure that n is a natural number.
+ */
+function Drop(xs: List[Int], n: Int): List[Int]
+  requires n >= 0   
+  requires n <= length(xs)
+  decreases xs
+{
+  (n==0) ? xs : Drop(xs.tail, n-1)
+}
+
+/**
+ * This lemma shows that if we take n elements and drop n elements from a list
+ * and append the two, then we get the original list back.
+ */
+function lemmaAppendTakeDrop(xs: List[Int], n: Int): Unit
+  requires n >= 0
+  requires n <= length(xs)
+  ensures append(Take(xs, n), Drop(xs, n)) == xs
+  decreases xs
+{
+  (n==0) ? unit() : lemmaAppendTakeDrop(xs.tail, n-1)
+}
+
+/**
+ * This lemma proves that if we append two lists and drop the size of the first list
+ * number of elements, we will get the second list back.
+ */
+function lemmaTakeDropAppend(xs: List[Int], ys: List[Int]): Unit
+  /**
+   * So that the first precondition is well-defined, we need to know that length(xs) is less than
+   * length(append(xs, ys)). This is ensured by the lemma call in the let expression.
+   *
+   * More information about let expression in file exercises-6.2.vpr.
+   */
+  ensures let _ == (lemmaLengthAppend(xs, ys)) in Take(append(xs, ys), length(xs)) == xs
+  ensures Drop(append(xs, ys), length(xs)) == ys
+  decreases xs, ys
+{
+  (xs.isNil) ? unit() :  lemmaTakeDropAppend(xs.tail, ys)
+}

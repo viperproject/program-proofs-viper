@@ -1,0 +1,61 @@
+import "examples-7.0.vpr"
+
+/**
+ * Predicates in Viper have a different meaning than in Dafny. There is no direct 
+ * equivalent to the Dafny predicate in Viper. So we just use a function that returns
+ * a Boolean value. This is semantically equivalent to the Dafny predicate.
+ *
+ * The function returns true if and only if x is less than y and false otherwise.
+ */
+function Less(x: Unary, y: Unary): Bool
+    decreases x
+{
+    (y != Zero()) && (x.isSuc ==> Less(x.pred, y.pred))
+}
+
+/**
+ * This lemma proves the fact that the Less function is equivalent to the less
+ * operator on Integers.
+ */
+function lemmaLessCorrect(x: Unary, y: Unary): Unit
+    ensures Less(x, y) <==> UnaryToNat(x) < UnaryToNat(y)
+    decreases x, y
+{
+    (x.isZero && y.isZero) ? unit() : 
+    (x.isZero && y.isSuc)  ? lemmaLessCorrect(x, y.pred) :
+    (x.isSuc && y.isZero)  ? lemmaLessCorrect(x.pred, y) : 
+                             lemmaLessCorrect(x.pred, y.pred)
+}
+
+/**
+ * This lemma proves that Less is transitive.
+ */
+function lemmaLessTransitive2(x: Unary, y: Unary, z: Unary): Unit
+    /**
+     * Here the book explains two ways to write specifications.
+     *
+     * In this version of the lemma, we require Less(x, y) && Less(y, z) and
+     * ensure Less(x, z).
+     * 
+     * To call the lemma somewhere, we need to guarantee that preconditions already hold.
+     */
+    requires Less(x, y) && Less(y, z)
+    ensures Less(x, z)
+{
+    (x.isZero && y.isZero && z.isZero) ? unit() : 
+    (x.isSuc && y.isSuc && z.isSuc)    ? lemmaLessTransitive(x.pred, y.pred, z.pred) : 
+                                         unit()
+}
+
+/**
+ * In this version we just have a postcondition that says Less(x, y) && Less(y, z) ==> Less(x, z)
+ * So this lemma would be "callable" with any Unarys, it would just not always guarantee anything.
+ */
+function lemmaLessTransitive(x: Unary, y: Unary, z: Unary): Unit
+    ensures Less(x, y) && Less(y, z) ==> Less(x, z)
+    decreases x, y, z
+{
+    (x.isZero && y.isZero && z.isZero) ? unit() : 
+    (x.isSuc && y.isSuc && z.isSuc)    ? lemmaLessTransitive(x.pred, y.pred, z.pred) : 
+                                         unit()
+}

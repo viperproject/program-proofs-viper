@@ -1,0 +1,160 @@
+import "examples-8.2.vpr"
+
+//Exercise 8.2
+/**
+ * For this exercise, we create a split function that uses a list as
+ * the second input a list instead of the length of the first list.
+ */
+function Split2(xs: List[Int], nn: List[Int]): Pair[List[Int], List[Int]]
+    requires length(nn) <= length(xs)
+    ensures let left == (getLeft(result)) in
+            let right == (getRight(result)) in
+            let n == (length(nn)/2) in 
+            length(left) == n && length(right) == length(xs) - n &&
+            append(left, right) == xs
+    decreases xs
+{
+    xs.isNil ? nn.isNil ? pair(Nil(), xs) 
+        : 
+        pair(Nil(), nn) 
+            :
+            nn.isNil ? pair(Nil(), xs) 
+                :
+                nn.tail.isNil ? pair(Nil(), xs) 
+                    : 
+                    asserting(length(Cons(nn.tail.value, nn.tail.tail)) + 1 == length(nn)) in
+                    pair(Cons(xs.value, getLeft(Split2(xs.tail, nn.tail.tail))), getRight(Split2(xs.tail, nn.tail.tail)))
+}
+
+//Exercise 8.3
+/**
+ * This MergeSort2 function is equivalent to the MergeSort
+ * function in examples-8.2.vpr except that it uses Split2.
+ */
+function MergeSort2(xs: List[Int]): List[Int]
+    decreases length(xs)
+{
+    (length(xs) < 2) ? xs : Merge(MergeSort2(getLeft(Split2(xs, xs))), MergeSort2(getRight(Split2(xs, xs))))
+}
+
+/**
+ * The exercise mentions as a hint that we can use lemmaAppendDecomposition.
+ * We import it here.
+ */
+import "../Chapter_6/exercises-6.2.vpr"
+
+/**
+ * This lemma proves the equivalence between MergeSort and MergeSort2.
+ */
+function lemmaEqualMergeSort(xs: List[Int]): Unit
+    ensures MergeSort(xs) == MergeSort2(xs)
+    decreases length(xs)
+{
+    let len == (length(xs)) in 
+    xs.isNil ? unit()
+                :
+                (len >= 2) ? let splitL == (getLeft(Split(xs, length(xs) / 2))) in
+                                let splitR == (getRight(Split(xs, length(xs) / 2))) in
+                                let split2L == (getLeft(Split2(xs, xs))) in
+                                let split2R == (getRight(Split2(xs, xs))) in 
+                                let _0 == (lemmaAppendDecomposition(splitL, splitR, split2L, split2R)) in 
+                                let _1 == (lemmaEqualMergeSort(split2L)) in
+                                let _2 == (lemmaEqualMergeSort(split2R)) in
+                                asserting(MergeSort(splitL) == MergeSort2(split2L)) in
+                                asserting(MergeSort(splitR) == MergeSort2(split2R)) in
+                                unit()
+                                : 
+                                unit()
+}
+
+//Exercise 8.4
+/**
+ * Automatic induction
+ */
+
+//Exercise 8.5
+/**
+ * Automatic induction
+ */
+
+ //Exercise 8.6
+/**
+ * To avoid name conflicts we call this function MergeSort8. The
+ * 8 refers to the cutoff, at which point we will perform 
+ * insertion sort rather than merge sort. This will make the function
+ * more efficient for small input Lists.
+ */
+function MergeSort8(xs: List[Int]): List[Int]
+    decreases xs
+{
+    MergeSortAux8(xs, length(xs))
+}
+
+/**
+ * This function behaves the same way as the one in the examples-8.2.vpr,
+ * The only difference is that we have a higher cutoff, after which
+ * we will sort the list with another sorting algorithm.
+ */
+function MergeSortAux8(xs: List[Int], len: Int): List[Int]
+    requires len >= 0    
+    requires len == length(xs)
+    decreases len
+{
+    (len < 8) ? InsertionSort(xs) : let x == (Split(xs, len/2)) in 
+        Merge(MergeSortAux8(getLeft(x), len/2), MergeSortAux8(getRight(x), len - len/2))
+}
+
+/**
+ * For exercise 8.6 we also have to prove the correctness of
+ * our new MergeSortAux8 function. To prove the correctness, 
+ * we have to verify that the algorithm outputs the same 
+ * elements as in xs but ordered.
+ *
+ * This lemma proves that the resulting list consists
+ * of the same elements as the input list.
+ */
+function lemmaMergeSortAuxSameElements8(xs: List[Int], len: Int, p: Int): Unit
+    requires len >= 0
+    requires len == length(xs)
+    ensures Project(xs, p) == Project(MergeSortAux8(xs, len), p)
+    decreases len
+{
+    (8 <= len) ? let left == (getLeft(Split(xs, len/2))) in 
+                    let right == (getRight(Split(xs, len/2))) in 
+                        let _0 == (lemmaMergeSortAuxOrdered8(left, len/2)) in 
+                        let _1 == (lemmaMergeSortAuxOrdered8(right, len - len/2)) in 
+                        /**
+                         * We can use this lemma here, since 
+                         * we do not change Merge and Project and the 
+                         * lemma would stay the same with our new
+                         * specification of MergeSort8.
+                         */
+                        let _2 == (lemmaMergeSameElements(MergeSortAux8(left, len / 2), MergeSortAux8(right, len - len / 2), p)) in
+                        let _3 == (lemmaMergeSortAuxSameElements8(left, len / 2, p)) in
+                        let _4 == (lemmaMergeSortAuxSameElements8(right, len - len / 2, p)) in
+                        let _5 == (lemmaAppendProject(left, right, p)) in
+                        unit() 
+                        : 
+                        let _0 == (lemmaInsertionSortSameElements(xs, p)) in
+                        unit()
+}
+
+
+/**
+ * This lemma proves that when we sort the list with 
+ * MergeSortAux8, the resulting list is ordered.
+ */
+function lemmaMergeSortAuxOrdered8(xs: List[Int], len: Int): Unit
+    requires len >= 0 
+    requires len == length(xs)
+    ensures Ordered(MergeSortAux8(xs, len))
+    decreases len
+{
+    (len >= 8) ? (let left == (getLeft(Split(xs, len/2))) in 
+                    let right == (getRight(Split(xs, len/2))) in 
+                    let _0 == (lemmaMergeSortAuxOrdered8(getLeft(Split(xs, len/2)), len/2)) in
+                    let _1 == (lemmaMergeSortAuxOrdered8(getRight(Split(xs, len/2)), len - len/2)) in
+                    lemmaMergeOrdered(MergeSortAux8(left, len/2), MergeSortAux8(right, len - len/2))) 
+                    : 
+                    lemmaInsertionSortOrdered(xs)
+}

@@ -1,0 +1,153 @@
+method RequiredStudyTime(c: Int) returns (hours: Int)
+  decreases _
+  requires 0 <= c
+  ensures  0 <= hours && hours <= 200
+
+method Study(n: Int, h: Int)
+  requires 0 <= n && 0 <= h
+  decreases 201*n + h
+{
+  if(h != 0) {
+    Study(n, h-1)
+  } else {
+    if(n == 0) {
+    } else {
+      var hours: Int
+      hours := RequiredStudyTime(n-1)
+      Study(n-1, hours)
+    }
+  }
+}
+
+method Outer13(a: Int)
+  decreases a
+  requires 0 <= a
+{
+  if(a != 0) {
+    var b: Int
+    b := RequiredStudyTime(a-1)
+    Inner13(a, b)
+  }
+}  
+
+method Inner13(a: Int, b: Int)
+  decreases a, b
+  requires 1 <= a && 0 <= b
+{
+  if(b == 0) {
+    Outer13(a-1)
+  } else {
+    Inner13(a, b-1)
+  }
+}
+
+method Outer14(a: Int)
+  decreases a
+  requires 0 <= a
+{
+  if(a != 0) {
+    var b: Int
+    b := RequiredStudyTime(a-1)
+    Inner14(a-1, b)
+  }
+}  
+
+method Inner14(a: Int, b: Int)
+  decreases a+1, b
+  requires 0 <= a && 0 <= b
+{
+  if(b == 0) {
+    Outer14(a)
+  } else {
+    Inner14(a, b-1)
+  }
+}
+
+// TODO: This example should use functions, but Viper can only do it with methods.
+// The reason is probably that Viper does not use the function postconditions
+// during the well-formedness checks and, hance, cannot prove the preconditions.
+/*
+function F(n: Int): Int
+  decreases n, 1
+  requires 0 <= n
+  ensures  n == 0 ==> result == 1
+  ensures  0 < n ==> 0 <= result
+  ensures  0 < n ==> result <= n
+{
+  n == 0 ? 1 : (n - M(F(n-1)))
+}
+
+function M(n: Int): Int
+  decreases n, 0
+  requires 0 <= n
+  ensures  n == 0 ==> result == 0
+  ensures  0 < n ==> 0 <= result && result <= n
+{
+  n == 0 ? 0 : (n - F(M(n-1)))
+}
+*/
+
+method F(n: Int) returns (r: Int)
+  decreases n, 1
+  requires 0 <= n
+  ensures n == 0 ==> r == 1
+  ensures n > 0 ==> 0 <= r && r <= n
+{
+  if (n == 0) {
+    r := 1
+  } else {
+    var tmp: Int
+    tmp := F(n-1)
+    tmp := M(tmp)
+    r := n - tmp
+  }
+}
+
+method M(n: Int) returns (r: Int)
+  decreases n, 0
+  requires 0 <= n
+  ensures n == 0 ==> r == 0
+  ensures n > 0 ==> 0 <= r && r <= n
+{
+  if (n == 0) {
+    r := 0
+  } else {
+    var tmp: Int
+    tmp := M(n-1)
+    tmp := F(tmp)
+    r := n - tmp
+  }
+}
+
+method StudyPlan(n: Int)
+  requires 0 <= n && n <= 40
+  decreases 40 - n, 1, 0
+{
+  if(n == 40) {    
+  } else {
+    var hours: Int
+    hours := RequiredStudyTime(n)
+    Learn(n, hours)
+  }
+}
+
+method Learn(n: Int, h: Int)
+  requires 0 <= n && 0 <= h
+  requires n < 40
+  decreases 40 - n, 0, h
+{
+  if(h == 0) {
+    StudyPlan(n+1)
+  } else {
+    Learn(n, h-1)
+  }
+}
+
+function F17(x: Int, y: Int): Int
+  requires 0 <= x && 0 <= y
+  decreases (x%2 == 1), (x%2 == 1 ? x : 1000-x)
+{
+  1000 <= x ? x + y :
+    (x % 2 == 0 ? F17(x+2, y+1) :
+      x < 6 ? F17(2*y, y) : F17(x-4, y+3))
+}

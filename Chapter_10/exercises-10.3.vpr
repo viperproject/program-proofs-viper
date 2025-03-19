@@ -1,0 +1,18 @@
+import "examples-10.3.vpr"
+
+//Exercise 10.4
+/**
+ * This lemma proves the implication that if the left subtree
+ * is a leaf(), then the right subtree will also be a leaf. This
+ * holds due to the BraunTree being balanced.
+ */
+function lemmaLeftLeafRightLeaf(pq: PQueue): Unit
+    requires !IsEmpty(pq)
+    ensures IsBalanced(pq) ==> (pq.left == Leaf() ==> pq.right == Leaf())
+    decreases pq
+{
+    IsBalanced(pq) ? asserting(IsBalanced(pq)) in
+                        asserting(|Elements(pq.left)| == |Elements(pq.right)| || |Elements(pq.left)| == |Elements(pq.right)| + 1) in 
+                     unit() :
+                     unit()
+}

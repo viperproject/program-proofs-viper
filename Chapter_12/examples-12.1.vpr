@@ -1,0 +1,63 @@
+import "examples-12.0.vpr"
+
+/**
+ * This method will compute the square of the Fib(n)
+ * number and return it. 
+ */
+method SquareFib(N: Int) returns (x: Int)
+    requires 0 <= N 
+    ensures 0 <= x
+    ensures x == Fib(N) * Fib(N)
+    decreases
+{
+    x := 0
+    var n: Int := 0
+    var y: Int := 1
+    while(n != N)
+        invariant 0 <= n && n <= N 
+        invariant x == Fib(n) * Fib(n)
+        invariant y == Fib(n + 1) * Fib(n + 1)
+        decreases N - n
+    {
+        x := y
+        y := Fib(n + 2) * Fib(n + 2)
+        n := n + 1
+    }
+}
+
+/**
+ * This function computes the square of the Fib(n) number
+ * using an extra variable k.
+ */
+method SquareFibWithk(N: Int) returns (x: Int)
+    requires 0 <= N 
+    ensures 0 <= x
+    ensures x == Fib(N) * Fib(N)
+    decreases
+{
+    x := 0
+    var n: Int := 0
+    var y: Int := 1
+    var k: Int := 0
+    var tmp1: Int := 0
+    var tmp2: Int := 1
+    while(n != N)
+        invariant 0 <= n && n <= N 
+        invariant x == Fib(n) * Fib(n)
+        invariant y == Fib(n + 1) * Fib(n + 1)
+        invariant k == 2 * Fib(n) * Fib(n + 1)
+        decreases N - n
+    {
+        /**
+         * Compared to the code in the book, we are using a
+         * temporary variable, as Viper does not 
+         * support simultaneous assignments of multiple variables.
+         */
+        tmp1 := x
+        tmp2 := y
+        x := y
+        y := tmp1 + k + y
+        k := k + tmp2 + tmp2
+        n := n + 1
+    }
+}

@@ -1,0 +1,212 @@
+// The map field is a "ghost" field which represents the values of the map mathematically.
+field map: Map[Int, Int]
+
+field root: Ref
+field key: Int
+field val: Int
+field left: Ref
+field right: Ref
+
+adt Option[T] {
+    Some(value: T)
+    None()
+}
+
+function Less(a: Set[Int], b: Set[Int]): Bool
+{
+    forall x: Int, y: Int :: (x in a && y in b) ==> x < y
+}
+
+// Viper does not support all of the map operations we require
+function mapRemove(m: Map[Int, Int], k2: Int): Map[Int, Int]
+ensures forall k: Int :: k != k2 ==> ((k in m <==> k in result) && (k in m ==> m[k] == result[k]))
+ensures !(k2 in result)
+
+function mapUnion(a: Map[Int, Int], b: Map[Int, Int]): Map[Int, Int]
+ensures domain(result) == domain(a) union domain(b)
+ensures forall k: Int :: k in a ==> result[k] == a[k]
+ensures forall k: Int :: (!(k in a) && k in b) ==> result[k] == b[k]
+
+// Viper can prove the properties required here directly without lemmas
+function Union(a: Map[Int, Int], node: Ref): Map[Int, Int]
+requires node != null ==> Node(node)
+ensures node == null ==> result == a
+ensures node != null ==> unfolding Node(node) in domain(result) == domain(a) union domain(node.map)
+ensures forall k: Int :: k in a ==> result[k] == a[k]
+ensures node != null ==> unfolding Node(node) in forall k: Int :: (!(k in a) && k in node.map) ==> result[k] == node.map[k]
+{
+    node == null ? a : mapUnion(a, unfolding Node(node) in node.map)
+}
+
+predicate Node(x: Ref){
+    acc(x.key) && acc(x.val) && acc(x.left) && acc(x.right) && acc(x.map) 
+    && (x.left != null ==> Node(x.left))
+    && (x.right != null ==> Node(x.right))
+}
+
+function nodeValid(x: Ref): Bool
+requires Node(x)
+{
+    unfolding Node(x) in 
+        (x.left != null ==> (nodeValid(x.left) && unfolding Node(x.left) in Less(domain(x.left.map), Set(x.key)))) &&
+        (x.right != null ==> (nodeValid(x.right) && unfolding Node(x.right) in Less(Set(x.key), domain(x.right.map)))) &&
+        x.map == Union(Union(Map(x.key := x.val), x.left), x.right)
+}
+
+function nodeMin(x: Ref): Int
+requires Node(x) && nodeValid(x)
+ensures result in unfolding Node(x) in domain(x.map)
+ensures unfolding Node(x) in forall k: Int :: (k in domain(x.map)) ==> result <= k
+{
+    unfolding Node(x) in x.left == null ? x.key : nodeMin(x.left)
+}
+
+method nodeConstructor(k: Int, v: Int) returns (x: Ref)
+ensures Node(x) && nodeValid(x)
+ensures unfolding Node(x) in x.map == Map(k := v)
+{
+    x := new(map, root, key, val, left, right)
+    x.map := Map(k := v)
+    x.key := k
+    x.val := v
+    x.left := null
+    x.right := null
+    fold Node(x)
+}
+
+function nodeLookUp(x: Ref, k: Int): Option[Int]
+requires Node(x) && nodeValid(x)
+ensures unfolding Node(x) in k in x.map ==> result == Some(x.map[k])
+ensures unfolding Node(x) in !(k in x.map) ==> result == None()
+{
+    x == null ? None() :
+        unfolding Node(x) in x.key == k ? Some(x.val) :
+            k < x.key ? (x.left == null ? None() : nodeLookUp(x.left, k)) :
+                (x.right == null ? None() : nodeLookUp(x.right, k))
+}
+
+method nodeAdd(x: Ref, k: Int, value: Int)
+requires Node(x) && nodeValid(x)
+ensures Node(x) && nodeValid(x)
+ensures unfolding Node(x) in x.map == old(unfolding Node(x) in x.map[k := value])
+{
+    unfold Node(x)
+    if(x.key == k){
+        x.val := value
+    } elseif(k < x.key) {
+        if(x.left == null){
+            x.left := nodeConstructor(k, value)
+        } else {
+            nodeAdd(x.left, k, value)
+        }
+    } else {
+        if(x.right == null){
+            x.right := nodeConstructor(k, value)
+        } else {
+            nodeAdd(x.right, k, value)
+        }
+    }
+    x.map := x.map[k := value]
+    fold Node(x)
+}
+
+method nodeRemove(x: Ref, k: Int) returns (n: Ref)
+requires Node(x) && nodeValid(x)
+ensures n != null ==> (Node(n) && nodeValid(n))
+ensures let newMap == (old(unfolding Node(x) in mapRemove(x.map, k))) in (|newMap| == 0 ? n == null : n != null && unfolding Node(n) in newMap == n.map)
+{
+    unfold Node(x)
+    if(x.key == k){
+        if(x.left == null){
+            n := x.right
+        } elseif(x.right == null){
+            n := x.left
+        } else {
+            var m: Int := nodeMin(x.right)
+            x.key := m
+            x.val := nodeLookUp(x.right, m).value
+            x.right := nodeRemove(x.right, m)
+            x.map := mapRemove(x.map, k)
+            fold Node(x)
+            n := x
+        }
+    } elseif(k < x.key && x.left != null){
+        x.left := nodeRemove(x.left, k)
+        x.map := mapRemove(x.map, k)
+        fold Node(x)
+        n := x
+    } elseif(k > x.key && x.right != null){
+        x.right := nodeRemove(x.right, k)
+        x.map := mapRemove(x.map, k)
+        fold Node(x)
+        n := x
+    } else{
+        fold Node(x)
+        n := x
+    }    
+}
+
+// We can define the predicate to also enforce validity directly as none of the methods ever need to operate on an temporarily invalid tree.
+predicate BinarySearchTree(x: Ref){
+    acc(x.map) && acc(x.root) && 
+    (|x.map| == 0 <==> x.root == null) && 
+    (x.root != null ==> Node(x.root) && nodeValid(x.root) && unfolding Node(x.root) in x.map == x.root.map)
+}
+
+method constructor() returns (x: Ref)
+ensures BinarySearchTree(x)
+ensures unfolding BinarySearchTree(x) in |x.map| == 0
+{
+    x := new(map, root)
+    x.map := Map()
+    x.root := null
+    fold BinarySearchTree(x)
+}
+
+function lookup(x: Ref, k: Int): Option[Int]
+requires BinarySearchTree(x)
+ensures unfolding BinarySearchTree(x) in k in x.map ==> result == Some(x.map[k])
+ensures unfolding BinarySearchTree(x) in !(k in x.map) ==> result == None()
+{
+    unfolding BinarySearchTree(x) in x.root == null ? None() : nodeLookUp(x.root, k)
+}
+
+function getMap(x: Ref): Map[Int, Int]
+requires BinarySearchTree(x)
+{
+    unfolding BinarySearchTree(x) in x.root == null ? Map() : unfolding Node(x.root) in x.root.map
+}
+
+method add(x: Ref, k: Int, value: Int)
+requires BinarySearchTree(x)
+ensures BinarySearchTree(x)
+ensures unfolding BinarySearchTree(x) in x.map == old(unfolding BinarySearchTree(x) in x.map[k := value])
+
+{
+    unfold BinarySearchTree(x)
+    var oldMap: Map[Int, Int] := x.map
+    if(x.root == null){
+        x.root := nodeConstructor(k, value)
+    } else {
+        nodeAdd(x.root, k, value)
+    }
+    unfold Node(x.root)
+    x.map := x.root.map
+
+    fold Node(x.root)
+    fold BinarySearchTree(x)
+}
+
+method remove(x: Ref, k: Int)
+requires BinarySearchTree(x)
+ensures BinarySearchTree(x)
+ensures unfolding BinarySearchTree(x) in x.map == old(unfolding BinarySearchTree(x) in mapRemove(x.map, k))
+{
+    unfold BinarySearchTree(x)
+    if(x.root != null){
+        var n: Ref := nodeRemove(x.root, k)
+        x.root := n
+        x.map := mapRemove(x.map, k)
+    }
+    fold BinarySearchTree(x)
+}

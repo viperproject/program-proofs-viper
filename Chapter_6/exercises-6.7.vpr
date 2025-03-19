@@ -1,0 +1,37 @@
+import "examples-6.7.vpr"
+
+//Exercise 6.24
+/**
+ * Automatic termination
+ */
+
+//Exercise 6.25
+/**
+ * With the this lemma we can prove a new version of lemmaAtDropHead.
+ */
+function lemmaDropLessThanEverything(xs: List[Int], i: Int): Unit
+  requires i >= 0
+  requires i < length(xs)
+  ensures Drop(xs, i).isCons
+  decreases xs 
+{
+  (xs.isNil && i==0) ? unit() 
+        : 
+        (xs.isCons && i>0) ?  lemmaDropLessThanEverything(xs.tail, i-1) 
+        : 
+        unit()
+}
+
+/**
+ * This is almost the same lemma as lemmaAtDropHead in file examples-6.4.vpr.
+ * The only difference is that we don't require Drop(xs, i) to be of type Cons. 
+ * Viper is able to prove this without additional help of lemmaDropLessThanEverything.
+ */
+function lemmaAtDropHead2(xs: List[Int], i: Int): Unit
+  requires i >= 0
+  requires i < length(xs)
+  ensures At(xs, i) == Drop(xs, i).value
+  decreases xs
+{
+  (i==0) ? unit() : lemmaAtDropHead2(xs.tail, i-1)
+}

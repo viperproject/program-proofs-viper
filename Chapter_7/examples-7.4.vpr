@@ -1,0 +1,103 @@
+import "examples-7.3.vpr"
+
+/**
+ * Here we define a function DivMod. This will return a Pair[Unary, Unary].
+ * The first return value will be the result of the division and the second
+ * return value will be the modulus or remainder of the division.
+ *
+ * The data type Pair is defined in the file definitions.vpr.
+ */
+function DivMod(x: Unary, y: Unary): Pair[Unary, Unary]
+    requires y != Zero()
+    /**
+     * The book mentioned that Dafny is not able to prove termination right
+     * away. This is due to their automatic termination criteria being chosen
+     * wrong. They manually provide the termination criteria, just like we 
+     * have done here as well. 
+     *
+     * The termination criteria we use here, uses the UnaryToNat function. As
+     * is explained in the book, this is due to the function DivMod decreasing
+     * over UnaryToNat(Sub(x, y)) < UnaryToNat(x, y). We can not use our 
+     * well-defined order to prove termination in this example.
+     */
+    decreases UnaryToNat(x)
+{
+    Less(x, y) ? pair(Zero(), x) 
+        : 
+        let _ == (lemmaSubCorrect(x, y)) in
+        let r == (DivMod(Sub(x, y), y)) in 
+        pair(Suc(getLeft(r)), getRight(r))
+}
+
+/**
+ * This lemma proves that if we subtract a non-zero Unary y from an Unary x, the result
+ * will be less or equal to x.
+ */
+function lemmaSubStructurallySmaller(x: Unary, y: Unary): Unit
+    /**
+     * For this lemma to work, we need x to be larger than y and we need y to 
+     * be not equal to zero(). If y would be equal to zero(), Less(Sub(x, y), x)
+     * would not be satisfied.
+     */
+    requires !Less(x, y) && y != Zero()
+    /**
+     * If we compare this post-condition to the one in the book, we see that we
+     * use Less(Sub(x, y), x), while they use Sub(x, y) < x. This is because we 
+     * can not overload the < operator in Viper. In Dafny the operators are overloaded
+     * automatically. This is not the case with Viper, therefore we will be using
+     * our Less function.
+     */
+    ensures Less(Sub(x, y), x) 
+    decreases y
+{
+    let _0 == (lemmaSubCorrect(x, y)) in 
+    let _1 == (lemmaLessCorrect(Sub(x, y), x)) in 
+    unit()
+}
+
+/**
+ * If we compare this function to the one in the book, we see that they do not need
+ * an explicit decreases clause. This is because the lemmaSubStructurallySmaller enables
+ * the solver to prove the termination of the function over automatically generated criteria 
+ * such as x. Since we can however not use '<' in the post-condition and instead used Less,
+ * we have to specifically declare the decreasing variables.
+ */
+function DivMod2(x: Unary, y: Unary): Pair[Unary, Unary]
+    requires y != Zero()
+    decreases UnaryToNat(x)
+{
+    Less(x, y) ? pair(Zero(), x) 
+        : 
+        let _0 == (lemmaSubStructurallySmaller(x, y)) in 
+        let _1 == (lemmaSubCorrect(x, y)) in
+        let r == (DivMod2(Sub(x, y), y)) in 
+        pair(Suc(getLeft(r)), getRight(r))
+}
+
+/**
+ * This import is done because we need lemmaAddSub and lemmaAddCommAssoc.
+ */
+import "exercises-7.2.vpr"
+
+/** 
+ * This lemma proves the equivalence between the multiplication and modulus
+ * on Integers and the multiplication and modulus on Unary. This lemma states 
+ * that if we use DivMod to get the division of x / y as d and DivMod to 
+ * get the modulus of x % y as m, then we can multiply y by d and add m to
+ * get back x.
+ */
+function lemmaDivModCorrect(x: Unary, y: Unary): Unit
+    requires y != Zero()
+    ensures let d == (getLeft(DivMod(x, y))) in 
+            let m == (getRight(DivMod(x, y))) in 
+            Add(Mul(d, y), m) == x && Less(m, y)
+{
+    Less(x, y) ? let _0 == (lemmaAddZero(x)) in unit() 
+        : 
+        let m == (getRight(DivMod(x, y))) in
+        let d == (getLeft(DivMod(Sub(x, y), y))) in
+        let _0 == (lemmaSubStructurallySmaller(x, y)) in
+        let _1 == (lemmaAddSub(x, y)) in 
+        let _2 == (lemmaAddCommAssoc(Mul(d, y), m, y)) in 
+        lemmaDivModCorrect(Sub(x, y), y)
+}

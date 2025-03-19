@@ -1,0 +1,37 @@
+adt Tree[T] {
+    Leaf(data: T)
+    Node(left: Tree[T], right: Tree[T])
+}
+
+// Viper does not support generic functions, so we do this for Tree[Int].
+function Mirror(t: Tree[Int]): Tree[Int]
+{
+    t.isLeaf ? t : Node(Mirror(t.right), Mirror(t.left))
+}
+
+method MirrorMirror(t: Tree[Int])
+ensures Mirror(Mirror(t)) == t
+{
+    if(t.isLeaf){
+        // trivial
+    } else {
+        MirrorMirror(t.left)
+        MirrorMirror(t.right)
+    }
+}
+
+function Size(t: Tree[Int]): Int
+{
+    t.isLeaf ? 1 : Size(t.left) + Size(t.right)
+}
+
+method SizeMirror(t: Tree[Int])
+ensures Size(Mirror(t)) == Size(t)
+{
+    if(t.isLeaf){
+        // trivial
+    } else {
+        SizeMirror(t.left)
+        SizeMirror(t.right)
+    }
+}

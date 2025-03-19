@@ -1,0 +1,329 @@
+import "Array.vpr"
+
+/**
+ * These methods take two sorted Array[Int]s and return the number of elements they
+ * have in common. Each version follows the progression of the current section.
+ * This version is correct, except for the fact that the multiset invariant and
+ * thus also the multiset postcondition cannot be proven with the given 
+ * information. At the time of writing, Viper's Silicon symbolic execution 
+ * backend times out before reaching a verdict about the method or the lemmas 
+ * and when verifying subsequent versions of the method, Viper's verification 
+ * condition generation backend Carbon times out too. There is currently work
+ * being done to improve the handling of sets for both Silicon and Carbon, so 
+ * this might be different for you.
+ * Uncomment each version to see the effect of the changes. For Viper we also 
+ * add the access invariants, pre- and postconditions, and the postcondition
+ * about c being an integer of the natural numbers, because Viper does not have
+ * the inbuilt type nat.
+ */
+/* method CoincidenceCount(a: Array[Int], b: Array[Int]) returns (c: Int)
+    requires iarrayAccessRead(a) && iarrayAccessRead(b)
+    requires iarraySorted(a) && iarraySorted(b)
+    ensures iarrayAccessRead(a) && iarrayAccessRead(b)
+    ensures iarrayUntouched(a) && iarrayUntouched(b)
+    ensures c >= 0
+    ensures c == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this postcondition
+{
+    c := 0
+    var m: Int := 0
+    var n: Int := 0
+    while (m < len(a) && n < len(b))
+        invariant iarrayAccessRead(a) && iarrayAccessRead(b)
+        invariant iarrayUntouched(a) && iarrayUntouched(b)
+        invariant 0 <= m <= len(a) && 0 <= n <= len(b)
+        invariant c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+            == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this invariant
+        {
+            if (iarrayLookup(a, m) == iarrayLookup(b, n))
+            {
+                c := c + 1
+                m := m + 1
+                n := n + 1
+            }
+            elseif (iarrayLookup(a, m) < iarrayLookup(b, n))
+            {
+                m := m + 1
+            }
+            else
+            {
+                n := n + 1
+            }
+        }
+} */
+
+/**
+ * Here we insert the assertions at the end of the cases. 
+ * Unfortunately, both Viper verifiers time out before reaching a verdict about
+ * the method. 
+ */
+/* method CoincidenceCount(a: Array[Int], b: Array[Int]) returns (c: Int)
+    requires iarrayAccessRead(a) && iarrayAccessRead(b)
+    requires iarraySorted(a) && iarraySorted(b)
+    ensures iarrayAccessRead(a) && iarrayAccessRead(b)
+    ensures iarrayUntouched(a) && iarrayUntouched(b)
+    ensures c >= 0
+    ensures c == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this postcondition
+{
+    c := 0
+    var m: Int := 0
+    var n: Int := 0
+    while (m < len(a) && n < len(b))
+        invariant iarrayAccessRead(a) && iarrayAccessRead(b)
+        invariant iarrayUntouched(a) && iarrayUntouched(b)
+        invariant 0 <= m <= len(a) && 0 <= n <= len(b)
+        invariant c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+            == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this invariant
+        {
+            if (iarrayLookup(a, m) == iarrayLookup(b, n))
+            {
+                c := c + 1
+                m := m + 1
+                n := n + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(a, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this assertion
+            }
+            elseif (iarrayLookup(a, m) < iarrayLookup(b, n))
+            {
+                m := m + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(a, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this assertion
+            }
+            else
+            {
+                n := n + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(a, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this assertion
+            }
+        }
+} */
+
+/**
+ * Here, the assertion is inserted at the beginning of the first case.
+ * Unfortunately, both Viper verifiers time out before reaching a verdict about
+ * the method. 
+ */
+/* method CoincidenceCount(a: Array[Int], b: Array[Int]) returns (c: Int)
+    requires iarrayAccessRead(a) && iarrayAccessRead(b)
+    requires iarraySorted(a) && iarraySorted(b)
+    ensures iarrayAccessRead(a) && iarrayAccessRead(b)
+    ensures iarrayUntouched(a) && iarrayUntouched(b)
+    ensures c >= 0
+    ensures c == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this postcondition
+{
+    c := 0
+    var m: Int := 0
+    var n: Int := 0
+    while (m < len(a) && n < len(b))
+        invariant iarrayAccessRead(a) && iarrayAccessRead(b)
+        invariant iarrayUntouched(a) && iarrayUntouched(b)
+        invariant 0 <= m <= len(a) && 0 <= n <= len(b)
+        invariant c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+            == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this invariant
+        {
+            if (iarrayLookup(a, m) == iarrayLookup(b, n))
+            {
+                assert multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(a, n)) 
+                    == multiset(Seq(iarrayLookup(a, m))) union 
+                        (multiset(iarrayDrop(a, n + 1)) intersection multiset(iarrayDrop(b, n + 1))) // unable to prove this assertion
+                c := c + 1
+                m := m + 1
+                n := n + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(a, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this assertion
+            }
+            elseif (iarrayLookup(a, m) < iarrayLookup(b, n))
+            {
+                m := m + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(a, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this assertion
+            }
+            else
+            {
+                n := n + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(a, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this assertion
+            }
+        }
+} */
+
+/**
+ * This lemma proves that if two arrays have a common element at the given
+ * indexes m and n, then the all coincidences of the remaining entries 
+ * including m and n are equal to the current common element plus the 
+ * coincidences of the remaining entries starting from the positions after the
+ * current common element m + 1 and n + 1. Viper does not need additional 
+ * information to prove this lemma but requires the lemma in the coincidence
+ * count function to prove correctness of the first case.
+ */
+/* function lemmaMultisetIntersectionPrefix(a: Array[Int], b: Array[Int], m: Int, n: Int): Unit
+    requires iarrayAccessRead(a) && iarrayAccessRead(b)
+    requires 0 <= m < len(a) && 0 <= n < len(b)
+    requires iarrayLookup(a, m) == iarrayLookup(b, n)
+    ensures multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n)) == Multiset(iarrayLookup(a,m)) union (multiset(iarrayDrop(a, m + 1)) intersection multiset(iarrayDrop(b, n + 1)))
+{
+    unit()
+} */
+
+/**
+ * Here we replace the assertion at the beginning of the first case with the
+ * MultisetIntersectionPrefix lemma. Unfortunately, both Viper verifiers time
+ * out before reaching a verdict about the function.
+ */
+/* method CoincidenceCount(a: Array[Int], b: Array[Int]) returns (c: Int)
+    requires iarrayAccessRead(a) && iarrayAccessRead(b)
+    requires forall i: Int, j: Int :: 0 <= i < j < len(a) ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+    requires forall i: Int, j: Int :: 0 <= i < j < len(b) ==> iarrayLookup(b, i) <= iarrayLookup(b, j)
+    ensures iarrayAccessRead(a) && iarrayAccessRead(b)
+    ensures iarrayUntouched(a) && iarrayUntouched(b)
+    ensures c >= 0
+    ensures c == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))|
+{
+    c := 0
+    var m: Int := 0
+    var n: Int := 0
+    while (m < len(a) && n < len(b))
+        invariant iarrayAccessRead(a) && iarrayAccessRead(b)
+        invariant iarrayUntouched(a) && iarrayUntouched(b)
+        invariant 0 <= m <= len(a) && 0 <= n <= len(b)
+        invariant c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+            == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this invariant
+        {
+            if (iarrayLookup(a, m) == iarrayLookup(b, n))
+            {
+                var lemma: Unit := lemmaMultisetIntersectionPrefix(a, b, m, n)
+                c := c + 1
+                m := m + 1
+                n := n + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(a, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // assertion should be provable now
+            }
+            elseif (iarrayLookup(a, m) < iarrayLookup(b, n))
+            {
+                m := m + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(a, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this assertion
+            }
+            else
+            {
+                n := n + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(a, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this assertion
+            }
+        }
+} */
+
+/**
+ * This lemma proves that if an array has an element at the position m, which 
+ * is not inside the multiset B, then we can drop it from consideration and
+ * advance to m + 1, because it doesn't count as a coincidence. Viper does not
+ * need additional information to prove this lemma but requires the lemma in 
+ * the CoincidenceCount method to prove correctness of the second case.
+ */
+/* function LemmaMultisetIntersectionAdvance(a: Array[Int], m: Int, B: Multiset[Int]): Unit
+    requires iarrayAccessRead(a)
+    requires 0 <= m < len(a) && (iarrayLookup(a, m) in B) == 0
+    ensures multiset(iarrayDrop(a, m)) intersection B == multiset(iarrayDrop(a, m + 1)) intersection B
+{
+    unit()
+} */
+
+/**
+ * Here we insert the proof of the second case  using the 
+ * MultisetIntersectionAdvance lemma. Unfortunately, both Viper verifiers time 
+ * out before reaching a verdict about the method.
+ */
+/* method CoincidenceCount(a: Array[Int], b: Array[Int]) returns (c: Int)
+    requires iarrayAccessRead(a) && iarrayAccessRead(b)
+    requires forall i: Int, j: Int :: 0 <= i < j < len(a) ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+    requires forall i: Int, j: Int :: 0 <= i < j < len(b) ==> iarrayLookup(b, i) <= iarrayLookup(b, j)
+    ensures iarrayAccessRead(a) && iarrayAccessRead(b)
+    ensures iarrayUntouched(a) && iarrayUntouched(b)
+    ensures c >= 0
+    ensures c == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this postcondition
+{
+    c := 0
+    var m: Int := 0
+    var n: Int := 0
+    while (m < len(a) && n < len(b))
+        invariant iarrayAccessRead(a) && iarrayAccessRead(b)
+        invariant iarrayUntouched(a) && iarrayUntouched(b)
+        invariant 0 <= m <= len(a) && 0 <= n <= len(b)
+        invariant c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+            == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this invariant
+        {
+            if (iarrayLookup(a, m) == iarrayLookup(b, n))
+            {
+                var lemma: Unit := lemmaMultisetIntersectionPrefix(a, b, m, n)
+                c := c + 1
+                m := m + 1
+                n := n + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // assertion should be provable now
+            }
+            elseif (iarrayLookup(a, m) < iarrayLookup(b, n))
+            {
+                var lemma: Unit := LemmaMultisetIntersectionAdvance(a, m, multiset(iarrayDrop(b, n)))
+                m := m + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // assertion should be provable now
+            }
+            else
+            {
+                n := n + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // unable to prove this assertion
+            }
+        }
+} */
+
+/**
+ * Here we insert the proof of the third case using the 
+ * MultisetIntersectionAdvance lemma again. In theory, Viper should not care 
+ * about the order of an intersection proof. But because both verifiers time
+ * out before reaching a verdict about the method, we do not know. Ideally,
+ * this would be the last step to prove the method. 
+ */
+/* method CoincidenceCount(a: Array[Int], b: Array[Int]) returns (c: Int)
+    requires iarrayAccessRead(a) && iarrayAccessRead(b)
+    requires forall i: Int, j: Int :: 0 <= i < j < len(a) ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+    requires forall i: Int, j: Int :: 0 <= i < j < len(b) ==> iarrayLookup(b, i) <= iarrayLookup(b, j)
+    ensures iarrayAccessRead(a) && iarrayAccessRead(b)
+    ensures iarrayUntouched(a) && iarrayUntouched(b)
+    ensures c >= 0
+    ensures c == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // postcondition should be provable now
+{
+    c := 0
+    var m: Int := 0
+    var n: Int := 0
+    while (m < len(a) && n < len(b))
+        invariant iarrayAccessRead(a) && iarrayAccessRead(b)
+        invariant iarrayUntouched(a) && iarrayUntouched(b)
+        invariant 0 <= m <= len(a) && 0 <= n <= len(b)
+        invariant c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+            == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // invariant should be provable now
+        {
+            if (iarrayLookup(a, m) == iarrayLookup(b, n))
+            {
+                var lemma: Unit := lemmaMultisetIntersectionPrefix(a, b, m, n)
+                c := c + 1
+                m := m + 1
+                n := n + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // assertion should be provable now
+            }
+            elseif (iarrayLookup(a, m) < iarrayLookup(b, n))
+            {
+                var lemma: Unit := LemmaMultisetIntersectionAdvance(a, m, multiset(iarrayDrop(b, n)))
+                m := m + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // assertion should be provable now
+            }
+            else
+            {
+                var lemma: Unit := LemmaMultisetIntersectionAdvance(b, n, multiset(iarrayDrop(a, m)))
+                n := n + 1
+                assert c + |multiset(iarrayDrop(a, m)) intersection multiset(iarrayDrop(b, n))| 
+                    == |multiset(iarrayFull(a)) intersection multiset(iarrayFull(b))| // assertion should be provable now
+            }
+        }
+} */

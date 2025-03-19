@@ -1,0 +1,68 @@
+/** 
+ * In order to use the functions and ADTs declared in Chapter 6.1, we have to import
+ * them.
+ * 
+ * Viper supports importing other files using relative and absolute paths.
+ * They are simply added for verification. Viper does however not support namespaces
+ * between the different files, so this can create name conflicts.
+ */
+import "examples-6.1.vpr"
+
+/** 
+ * This function appends the two list parameters together into one list. 
+ */
+function append(xs: List[Int], ys: List[Int]): List[Int]
+  ensures xs.isNil ==> result == ys
+  ensures xs.isCons ==> result == Cons(xs.value, append(xs.tail, ys))
+  decreases xs
+{
+  xs.isNil ? ys : Cons(xs.value, append(xs.tail, ys))
+}
+
+/** 
+ * This lemma ensures that the length of the append of two lists is equal
+ * to the sum of the lengths of the individual lists.
+ */
+function lemmaLengthAppend(xs: List[Int], ys: List[Int]): Unit
+  ensures length(append(xs, ys)) == length(xs) + length(ys)
+  decreases xs
+{
+  /** 
+   * For this induction we make a distinction whether xs is equal to Nil. If so, the
+   * statement trivially holds. Otherwise, we continue the induction on the tail of xs.
+   */
+   xs.isNil ? unit() : (lemmaLengthAppend(xs.tail, ys))
+}
+
+/** 
+ * This lemma proves that appending an element y to a list xs with Snoc returns the same list 
+ * appending a list containing only y to xs.
+ */
+function lemmaSnocAppend(xs: List[Int], y: Int): Unit
+  ensures Snoc(xs, y) == append(xs, Cons(y, Nil()))
+  decreases xs
+{
+  (xs.isNil) ? unit() : lemmaSnocAppend(xs.tail, y)
+}
+
+/** 
+ * This lemma proves that appending a Nil list to a list xs returns xs unchanged.
+ */
+function lemmaAppendNil(xs: List[Int]): Unit
+  ensures append(xs, Nil()) == xs 
+  ensures append(Nil(), xs) == xs
+  decreases xs
+{
+  xs.isNil ? unit() : lemmaAppendNil(xs.tail)
+}
+
+/**
+ * This lemma proves that appending lists is an associative operation.
+ */
+function lemmaAppendAssociative(xs: List[Int], ys: List[Int], zs: List[Int]): Unit
+  ensures append(append(xs, ys), zs) == append(xs, append(ys, zs))
+  decreases xs
+{
+  xs.isNil ? unit() : lemmaAppendAssociative(xs.tail, ys, zs)
+}
+

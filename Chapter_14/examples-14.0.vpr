@@ -1,0 +1,221 @@
+/**
+ * This file contains definitions for custom array data types and methods to
+ * manipulate them.
+ */
+import "../Chapter_13/Array.vpr"
+
+/**
+ * This method sets the first and last elements of the integer array a to the
+ * values left and right, respectively.
+ * Dafny handles the framing of memory locations, which might be changed within 
+ * the method, through the modifies clause. This modifies clause has to be 
+ * filled in manually by the programmer with the memory locations that will be
+ * changed within the method. In Viper, we simply specify which individual 
+ * fields of memory we are allowed to modify through Viper's permission-based 
+ * accessibility predicate acc(x.f), where x is a reference type and f is a
+ * field of x. This will grant the current context a permission value of 1 for
+ * the requested field, which means full access to the field f of x. Through
+ * that, we can precisely reason about arbitrary data structures by declaring
+ * their individual memory locations as fields and specifying their behavior
+ * through domains.
+ * In this method, we could have used the iarrayAccessFull(a) macro to request
+ * access permissions for the whole array. But because we know that only the
+ * first and last elements of the array are going to be modified, we only
+ * request access permissions for these two elements. We also need to take care
+ * of the case where the array has only one element, in which case we don't 
+ * need to request more access permissions, as it would be for the first 
+ * element again. If we request permissions again for the same field, the 
+ * current context will hold a permission value greater than 1 for that field,
+ * which is an impossible state. Due to the principle of explosion, the 
+ * verifier will then verify anything after that, which is not useful. 
+ * Therefore, this scenario should be avoided. We can check for this case by
+ * inserting the statement "assert false". If this verifies, we know that the
+ * current context holds a permission value greater than 1 for a field.
+ * The modified frame bylaw for Viper could be stated as follows:
+ * "If a method changes the elements of an Array[Int] a given as parameter, its
+ * specifications must include the accessibility predicates for all fields 
+ * which are referenced by a and which are changed within the method in the 
+ * precondition of the method and if there is a postcondition that mentions 
+ * these fields, also in the postcondition."
+ */
+method SetEndPoints(a: Array[Int], left: Int, right: Int)
+    requires len(a) != 0
+    requires acc(loc(a, 0).iarrayVal)
+    requires len(a) > 1 ==> acc(loc(a, len(a) - 1).iarrayVal)
+{
+    iarrayUpdate(a, 0, left)
+    iarrayUpdate(a, len(a) - 1, right)
+    assert perm(loc(a, 0).iarrayVal) == 1/1
+    inhale acc(loc(a, 0).iarrayVal)
+    assert perm(loc(a, 0).iarrayVal) == 2/1
+}
+
+/**
+ * This method demonstrates the ability of the verifer to reason about domain
+ * aliasing. We only need to request access to fields of the integer array a.
+ * The verifier can then reason that c is an alias of a and that if the 
+ * condition b == a holds, then b is also an alias of a.
+ */
+method Aliases(a: Array[Int], b: Array[Int])
+    requires 100 <= len(a) 
+    requires acc(loc(a, 0).iarrayVal)
+    requires acc(loc(a, 10).iarrayVal)
+    requires acc(loc(a, 14).iarrayVal)
+    requires acc(loc(a, 20).iarrayVal)
+{
+    iarrayUpdate(a, 0, 10)
+    var c: Array[Int] := a
+    if (b == a)
+    {
+        iarrayUpdate(b, 10, iarrayLookup(b, 0) + 1)
+    }
+    iarrayUpdate(c, 20, iarrayLookup(a, 14) + 2)
+}
+
+/**
+ * This method officially introduces the old expression old(x.f), where x is a
+ * reference type and f is a field of x. The old expression in Viper works the 
+ * same way as in Dafny, with the difference that in Viper, the old expression
+ * is used on fields directly. It allows for referencing the value of a field
+ * at the beginning of the method call.
+ */
+method UpdateElements(a: Array[Int])
+    requires len(a) == 10
+    requires acc(loc(a, 4).iarrayVal) && acc(loc(a, 6).iarrayVal) && acc(loc(a, 8).iarrayVal) && 
+        acc(loc(a, 7).iarrayVal)
+    ensures acc(loc(a, 4).iarrayVal) && acc(loc(a, 6).iarrayVal) && acc(loc(a, 8).iarrayVal)
+    ensures old(iarrayLookup(a, 4)) < iarrayLookup(a, 4)
+    ensures iarrayLookup(a, 6) <= old(iarrayLookup(a, 6))
+    ensures iarrayLookup(a, 8) == old(iarrayLookup(a, 8))
+{
+    iarrayUpdate(a, 4, iarrayLookup(a, 4) + 3)
+    iarrayUpdate(a, 8, iarrayLookup(a, 8) + 1)
+    iarrayUpdate(a, 7, 516)
+    iarrayUpdate(a, 8, iarrayLookup(a, 8) - 1)
+}
+
+/**
+ * This method shows how only fields mentioned inside the old expression are
+ * evaluated by it. Other variables are unaffected.
+ */ 
+method OldVsParameters(a: Array[Int], i: Int) returns (y: Int)
+    requires 0 <= i < len(a)
+    requires acc(loc(a, i).iarrayVal)
+    ensures old(iarrayLookup(a, i) + y) == 25
+{
+    y := 25 - iarrayLookup(a, i)
+}
+
+/**
+ * This method increments the value of the i-th element of the array a.
+ * The commented out postcondition in this method demonstrates how the old
+ * expression can be misused. The Dafny example discusses the common bracket
+ * notation for arrays, but because Array[Int] is a custom domain, this notation
+ * does not exist for constructs out of fields in Viper. This might lead to
+ * fewer unintended misuses of the old expression in Viper.
+ */
+method Increment(a: Array[Int], i: Int)
+    requires 0 <= i < len(a)
+    requires acc(loc(a, i).iarrayVal)
+    ensures acc(loc(a, i).iarrayVal)
+    ensures iarrayLookup(a, i) == old(iarrayLookup(a, i)) + 1
+    //ensures iarrayLookup(a, i) == old(a) + 1
+{
+    iarrayUpdate(a, i, iarrayLookup(a, i) + 1)
+}
+
+/**
+ * In this method, we allocate two new arrays and set some values.
+ * This method demonstrates how access to fields of variables that are assigned
+ * inside the method don't have to be specified in the precondition of the 
+ * method. Access is given through the iarrayInit method, which inhales them.
+ * The frame bylaw for Viper could be formulated as follows:
+ * "A method is allowed to allocate new domains and fields, and change their
+ * values without having to request access permissions in the preconditions."
+ * Please note that if we want to make statements about these fields in the
+ * postconditions, we still have to ensure access permissions for them first.
+ */
+method NewArray() returns (a: Array[Int])
+    ensures len(a) == 20
+{
+    a := iarrayInit(20)
+    var b: Array[Int] := iarrayInit(30)
+    iarrayUpdate(a, 6, 216)
+    iarrayUpdate(b, 7, 343)
+}
+
+/**
+ * This method is a modified version of the NewArray method above. In the 
+ * example from the book, the fresh statement is used to signal to the verifier
+ * that the array a is allocated inside the context of the fresh statement.
+ * With the fresh statement, a would be considered to be part of NewArray's
+ * modifies clause. In Viper, we ensure access to the array through the 
+ * postcondition and the verifier will be able to reason about a after this
+ * method returns.
+ */
+method NewArrayPreserveAccess() returns (a: Array[Int])
+    ensures len(a) == 20
+    ensures iarrayAccessFull(a)
+{
+    a := iarrayInit(20)
+    var b: Array[Int] := iarrayInit(30)
+    iarrayUpdate(a, 6, 216)
+    iarrayUpdate(b, 7, 343)
+}
+
+/**
+ * This method demonstrates how methods must tell the verifier about field 
+ * access in order to provide enough information to allow changes to passed
+ * domains and fields. The simple NewArray method from above will not verify
+ * because the verifier cannot infer access permissions from the method which 
+ * are not explicitly stated inside postconditions.
+ * Explicitly stating the access permissions as postcondition is the preferred
+ * way of writing your methods, but another way exists. After the method call, 
+ * we could use the inhale statement to add the permissions denoted by it to 
+ * the program state, using the same array access macro.
+ */
+method Caller()
+{
+    /* var a: Array[Int] := NewArray()
+    inhale iarrayAccessFull(a) */
+    var a: Array[Int] := NewArrayPreserveAccess()
+    iarrayUpdate(a, 8, 512)
+}
+
+/**
+ * This function checks if all elements in the array a in the range [lo, hi) 
+ * only have the value 0.
+ * In Dafny, we need to differentiate between read and write access 
+ * through the reads and modifies clauses. In Viper, we can differentiate read
+ * and write permission through the permission granted by the accessibility
+ * predicate. If we ask for acc(x.f), the predicate will return the permission
+ * value 1, which means full access to the field x. This includes both read and
+ * write access. But we can also add a fraction as a second parameter to the 
+ * acc predicate, which will return the requested fractional permission value.
+ * Permission value 0 means no access, 1 means full access, and values between
+ * 0 and 1 mean read access. Values above 1 can exist but represent an 
+ * impossible state and should therfore be avoided. When permissions above 1 
+ * are held, the verifier will verify anything after that, which is not useful.
+ * Requesting fractional permissions is useful when we want to reason about 
+ * concurrent reads on one field locations. In this example, we request a 
+ * permission value of 1/2 for the whole array a.
+ */
+function IsZeroArray(a: Array[Int], lo: Int, hi: Int): Bool
+    requires 0 <= lo <= hi <= len(a)
+    requires iarrayAccessRead(a)
+{
+    lo == hi || (iarrayLookup(a, lo) == 0 && IsZeroArray(a, lo + 1, hi))
+}
+
+/**
+ * This function checks if all elements in the sequence a in the range 
+ * [lo, hi) only have zero values.
+ * Because sequences are not meant for reasoning about memory locations and
+ * instead for reasoning about mathematical statements, they do not require
+ * access permissions.
+ */
+function IsZeroSeq(a: Seq[Int], lo: Int, hi: Int): Bool
+    requires 0 <= lo <= hi <= |a|
+{
+    lo == hi || (a[lo] == 0 && IsZeroSeq(a, lo + 1, hi))
+}

@@ -1,0 +1,20 @@
+function More(x: Int): Int {
+  x <= 0 ? 1 : More(x - 2) + 3
+}
+
+method Increasing(x: Int)
+ensures x < More(x)
+{
+  if(x <= 0){
+    assert More(x) == 1
+
+  } else {
+    assert More(x) == More(x - 2) + 3
+    Increasing(x - 2)
+    assert x - 2 < More(x - 2)
+    assert x + 1 < More(x - 2) + 3
+    assert x + 1 < More(x)
+  }
+}
+
+// Viper does support calc blocks. We will model them with assert statements and asserting expressions.

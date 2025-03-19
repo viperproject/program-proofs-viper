@@ -1,0 +1,84 @@
+import "../Chapter_13/Array.vpr"
+
+/**
+ * This ADT represents the colors of the Dutch flag red, white and blue.
+ */
+adt Color {
+    Red()
+    White()
+    Blue()
+}
+
+/**
+ * This function takes two colors c and d. It returns true if c is below d in the 
+ * order of the Dutch flag, and false otherwise. The order from top to bottom 
+ * is red, white, blue.
+ */
+function Below(c: Color, d: Color): Bool
+{
+    c.isRed || c == d || d.isBlue
+}
+
+/**
+ * For an array of colors, we need to define a field that stores color values
+ * and macros to request access, lookup and modify the color array values.
+ */
+field carrayVal: Color
+
+define carrayAccessFull(a)             
+    forall k: Int :: 0 <= k < len(a) ==> acc(loc(a, k).carrayVal)
+
+define carrayLookup(a, i)
+    loc(a, i).carrayVal
+define carrayUpdate(a, i, e) {
+    loc(a, i).carrayVal := e
+}
+
+/**
+ * This method takes an array of colors a, and sorts it in place such that all
+ * the red elements are at the beginning, all the white elements are in the
+ * middle, and all the blue elements are at the end, equivalent to the Dutch
+ * Flag problem.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one of the colors.
+ */
+method DutchFlag(a: Array[Color])
+    requires carrayAccessFull(a)
+    ensures carrayAccessFull(a)
+    ensures forall i: Int, j: Int :: 0 <= i < j < len(a) ==> Below(carrayLookup(a, i), carrayLookup(a, j))
+    // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+{
+    var r: Int := 0
+    var w: Int := 0
+    var b: Int := len(a)
+    while (w < b)
+        invariant carrayAccessFull(a)
+        invariant 0 <= r <= w <= b <= len(a)
+        invariant forall i: Int :: 0 <= i < r ==> carrayLookup(a, i).isRed
+        invariant forall i: Int :: r <= i < w ==> carrayLookup(a, i).isWhite
+        invariant forall i: Int :: b <= i < len(a) ==> carrayLookup(a, i).isBlue
+        // invariant multiset(iarrayFull(a)) == multiset(iarrayFull(old(a)))
+    {
+        var curr: Color := carrayLookup(a, w)
+        if (curr.isWhite)
+        {
+            w := w + 1
+        }
+        elseif (curr.isRed)
+        {
+            carrayUpdate(a, w, carrayLookup(a, r))
+            carrayUpdate(a, r, curr)
+            r := r + 1
+            w := w + 1
+        }
+        else
+        {
+            carrayUpdate(a, w, carrayLookup(a, b - 1))
+            carrayUpdate(a, b - 1, curr)
+            b := b - 1
+        }
+    }
+}

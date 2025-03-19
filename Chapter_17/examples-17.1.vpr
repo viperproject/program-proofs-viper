@@ -1,0 +1,3 @@
+/*
+Viper does not support generics on predicates or methods. As the implementation of ExtensibleArray<T> requires an ExtensibleArray<array<T>>, we cannot express this easily in Viper.
+*/

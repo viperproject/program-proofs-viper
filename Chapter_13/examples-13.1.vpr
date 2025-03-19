@@ -1,0 +1,154 @@
+import "Array.vpr"
+
+/**
+ * This function decides whether an integer is either three or four. Dafny 
+ * predicates are just functions with a Boolean return type. In Viper, a 
+ * predicate is something entirely different. A predicate is an abstraction
+ * over assertions, which can include resources. We will therefore model Dafny
+ * predicates unsing Boolean functions in Viper. Viper does not have a built-in
+ * type for real numbers, which is why we use Int, as it does not matter for 
+ * the example. 
+ */
+function nearPi(x: Int): Bool
+{
+    3 <= x <= 4
+}
+
+/**
+ * Viper does not have higher-order function parameters and parameterized
+ * functions and methods. Therefore the basic LinearSearch specification is
+ * rather short and we explicitly use Array[Int]s.
+ */
+method LinearSearch(a: Array[Int]) returns (n: Int)
+
+/**
+ * This method describes a linear search pattern of an array. We use the nearPi
+ * predicate explicitly. This means that we either return the first index which
+ * satisfies nearPi(x), or the length of the array. Also because Viper has 
+ * neither a return keyword nor a break keyword we used a Boolean to act as a
+ * flag, which signals early termination. Next to the array access, we also 
+ * have to specify in the loop invariants that if a match has been found, as
+ * signalled by the flag, the index is within the bounds of the array and the
+ * element at the index satisfies nearPi(x).
+ */
+method LinearSearch0(a: Array[Int]) returns (n: Int)
+    requires iarrayAccessRead(a)
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures 0 <= n <= len(a)
+    ensures n == len(a) || nearPi(iarrayLookup(a, n))
+{
+    n := 0;
+    var found: Bool := false;
+    while (n != len(a) && !found)
+        invariant iarrayAccessRead(a) && iarrayUntouched(a)
+        invariant 0 <= n <= len(a)
+        invariant found ==> 0 <= n < len(a) && nearPi(iarrayLookup(a, n))
+        {
+            if (nearPi(iarrayLookup(a, n)))
+            {
+                found := true;
+            }
+            else
+            {
+                n := n + 1;
+            }
+        }
+}
+
+/**
+ * This method describes a linear search pattern of an array. We will use the
+ * nearPi predicate explicitly. Additionally to the specifications above, we
+ * specify if the result is the length of array, that no element of the array
+ * satisfies nearPi(x). The universal quantifier forall in Viper works the same
+ * in this example as in Dafny.
+ */
+method LinearSearch1(a: Array[Int]) returns (n: Int)
+    requires iarrayAccessRead(a)
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures 0 <= n <= len(a)
+    ensures n == len(a) || nearPi(iarrayLookup(a, n))
+    ensures n == len(a) ==> forall i: Int :: 0 <= i < len(a) ==> !nearPi(iarrayLookup(a, i))
+{
+    n := 0;
+    var found: Bool := false;
+    while (n != len(a) && !found)
+        invariant iarrayAccessRead(a) && iarrayUntouched(a)
+        invariant 0 <= n <= len(a)
+        invariant forall i: Int :: 0 <= i < n ==> !nearPi(iarrayLookup(a, i))
+        invariant found ==> 0 <= n < len(a) && nearPi(iarrayLookup(a, n))
+        {
+            if (nearPi(iarrayLookup(a, n)))
+            {
+                found := true;
+            }
+            else
+            {
+                n := n + 1;
+            }
+        }
+}
+
+/**
+ * This method describes a linear search pattern of an array. We will use the
+ * nearPi predicate explicitly. We rewrite the postcondition of LinearSearch1
+ * to now ensure that the returned element is the first index which satisfies
+ * nearPi(x).
+ */
+method LinearSearch2(a: Array[Int]) returns (n: Int)
+    requires iarrayAccessRead(a)
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures 0 <= n <= len(a)
+    ensures n == len(a) || nearPi(iarrayLookup(a, n))
+    ensures forall i: Int :: 0 <= i < n ==> !nearPi(iarrayLookup(a, i))
+{
+    n := 0;
+    var found: Bool := false;
+    while (n != len(a) && !found)
+        invariant iarrayAccessRead(a) && iarrayUntouched(a)
+        invariant 0 <= n <= len(a)
+        invariant forall i: Int :: 0 <= i < n ==> !nearPi(iarrayLookup(a, i))
+        invariant found ==> 0 <= n < len(a) && nearPi(iarrayLookup(a, n))
+        {
+            if (nearPi(iarrayLookup(a, n)))
+            {
+                found := true;
+            }
+            else
+            {
+                n := n + 1;
+            }
+        }
+}
+
+/**
+ * This method describes a linear search pattern of an array. We will use the
+ * nearPi predicate explicitly. Here we assume that an index x exists which 
+ * satisfies nearPi(x), which in turn simplifies the postcondition. The 
+ * existential quantifier exists in Viper works the same in this example as in 
+ * Dafny.
+ */
+method LinearSearch3(a: Array[Int]) returns (n: Int)
+    requires iarrayAccessRead(a)
+    requires exists i: Int :: 0 <= i < len(a) && nearPi(iarrayLookup(a, i))
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures 0 <= n < len(a) && nearPi(iarrayLookup(a, n))
+{
+    n := 0;
+    var found: Bool := false;
+    while (!found)
+        invariant iarrayAccessRead(a) && iarrayUntouched(a)
+        invariant 0 <= n <= len(a)
+        invariant exists i: Int :: n <= i < len(a) && nearPi(iarrayLookup(a, i))
+        invariant found ==> 0 <= n < len(a) && nearPi(iarrayLookup(a, n))
+        {
+            if (nearPi(iarrayLookup(a, n)))
+            {
+                found := true;
+            }
+            else
+            {
+                n := n + 1;
+            }
+        }
+
+}

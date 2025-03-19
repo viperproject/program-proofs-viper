@@ -1,0 +1,35 @@
+import "examples-7.0.vpr"
+
+//Exercise 7.0
+/**
+ * Here we rename the function to not generate name 
+ * conflicts with the function of the examples-7.0.vpr. 
+ */
+function NatToUnary2(n: Int): Unary 
+    requires n >= 0 
+    decreases n
+{
+    (n<=2) ? Zero() : Suc(NatToUnary(n-1))
+}
+
+/**
+ * Here we rename the function to not generate name 
+ * conflicts with the function of the examples-7.0.vpr. 
+ *
+ * The commented-out postcondition cannot be verified, since we
+ * broke the injectivity of the NatToUnary2 function.
+ */
+function lemmaNatUnaryCorrespondence2(n: Int, x: Unary): Unit
+    requires n >= 0 
+    //ensures UnaryToNat(NatToUnary2(n)) == n
+    //ensures NatToUnary2(UnaryToNat(x)) == x
+    decreases x, n
+{
+    (x.isZero && n==0) ? unit() 
+        : 
+        (x.isZero && n!=0) ? lemmaNatUnaryCorrespondence2(n-1,x) 
+            : 
+            (x.isSuc && n==0) ? lemmaNatUnaryCorrespondence2(n, x.pred) 
+                : 
+                lemmaNatUnaryCorrespondence2(n-1, x.pred)
+}

@@ -1,0 +1,70 @@
+import "examples-7.1.vpr"
+
+/**
+ * This function defines a recursive addition function for our Unary data type. 
+ */
+function Add(x: Unary, y: Unary): Unary
+    decreases y
+{
+    y.isZero ? x : Suc(Add(x, y.pred))
+}
+
+/**
+ * This lemma proves the equivalence between the addition of Integers and the Add function.
+ */
+function lemmaAddCorrect(x: Unary, y: Unary): Unit
+    ensures UnaryToNat(Add(x, y)) == UnaryToNat(x) + UnaryToNat(y)
+    decreases y
+{
+    y.isZero ? unit() : lemmaAddCorrect(x, y.pred)
+}
+
+/**
+ * This lemma proves that the successor of the result of Add(x, y) is equal to
+ * adding Suc(x) and y.
+*/
+function lemmaSucAdd(x: Unary, y: Unary): Unit
+    ensures Suc(Add(x, y)) == Add(Suc(x), y)
+    decreases y
+{
+    y.isZero ? unit() : lemmaSucAdd(x, y.pred)
+}
+
+/**
+ * This lemma proves that adding zero() to any Unary will return the same Unary.
+ */
+function lemmaAddZero(x: Unary): Unit
+    ensures Add(Zero(), x) == x
+    decreases x
+{
+    x.isZero ? unit() : lemmaAddZero(x.pred)
+}
+
+/**
+ * Similar to the Add function, we also define subtraction on Unary numbers.
+ */
+function Sub(x: Unary, y: Unary): Unary
+    requires !Less(x, y)
+    decreases x
+{
+    y.isZero ? x : Sub(x.pred, y.pred)
+}
+
+/**
+ * This lemma proves the equivalence between the subtraction of Integers and
+ * the Sub function.
+ */
+function lemmaSubCorrect(x: Unary, y: Unary): Unit
+    /**
+     * For Subtraction to work, we need to ensure that the 
+     * Unary that gets subtracted is smaller than the one
+     * from which it will be subtracted. This is due to
+     * Unary data types only representing non-negative Integer 
+     * values. 
+     */
+    requires !Less(x, y)
+    ensures UnaryToNat(Sub(x, y)) == UnaryToNat(x) - UnaryToNat(y)
+    decreases x
+{
+    y.isZero ? unit() : lemmaSubCorrect(x.pred, y.pred)
+}

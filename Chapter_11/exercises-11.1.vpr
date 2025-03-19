@@ -1,0 +1,120 @@
+//Exercise 11.3
+/**
+ * In this exercise we are asked to introduce an if statement
+ * in the loop body and decide on the guard.
+ */
+method Exercise113()
+{
+    var x: Int
+    var y: Int
+
+    x := 0
+    y := 191
+    while(7 <= y)
+        invariant 0 <= y && 7 * x + y == 191
+    {
+        /**
+         * The guard condition we need in the loop body is one
+         * that guarantees us that y will not violate the invariant
+         * and not become negative.
+         */
+        if (y >= 14) 
+        {
+            y := y - 14
+            x := x + 2
+        }
+        else 
+        {
+            y := y - 7
+            x := x + 1
+        }
+    }
+    assert x == 191 / 7 && y == 191 % 7
+}
+
+//Exercise 11.4
+/**
+ * We have to write a different but still correct initializing 
+ * assignment for the loop in method 1112 in examples-11.1.vpr.
+ * We could theoretically just assign the i-th step to the 
+ * variables, as long as they are less than 33.
+ */
+method Exercise114()
+{
+    var n: Int
+    var s: Int
+    n := 1
+    s := 0
+    while(n != 33)
+        invariant s == n * (n - 1) / 2
+    {
+        s := s + n
+        n := n + 1
+    }
+}
+
+//Exercise 11.5
+method Exercise1150()
+{
+    var x: Int
+    /**
+     * We can initialize x with any even number. But if we
+     * want to enter the loop, we have to use an even number 
+     * less than 300. 
+     */
+    x := 4
+    while(x < 300)
+        invariant x % 2 == 0
+    {
+        /**
+         * As long as we keep x even, we can write
+         * our function body in any way we want.
+         */
+        x := x + 2
+    }
+}
+
+method Exercise1151()
+{
+    var x: Int
+    /**
+     * We have to initialize x as an odd number, otherwise
+     * we will not enter the loop. If we do not initialize
+     * x as an odd number between 0 and 100, we will violate
+     * the invariant upon entry.
+     */
+    x := 1
+    while(x % 2 == 1)
+        invariant 0 <= x && x <= 100
+    {
+        /**
+         * In the loop body, we just have to make sure that 
+         * we do not violate the invariant while assigning 
+         * a value to x that exits us from the loop.
+         */
+        x := x + 1
+    }
+}
+
+//Exercise 11.6
+/**
+ * This exercise asks us to write a loop invariant for the
+ * following program fragment.
+ */
+method Exercise116()
+{
+    var x: Int
+    x := 0
+    while(x < 100)
+        /**
+         * This loop invariant guarantees us that x will be
+         * smaller or equal to 102 and will be divisible by
+         * 3. Together with the loop condition, the only 
+         * option for x after the loop is 102.
+         */
+        invariant x % 3 == 0 && x <= 102
+    {
+        x := x + 3        
+    }
+    assert x == 102
+}

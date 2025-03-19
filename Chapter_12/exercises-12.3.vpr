@@ -1,0 +1,42 @@
+import "examples-12.3.vpr"
+
+
+//Exercise 12.6
+/**
+ * This exercise asks us about the default decreases clauses 
+ * of the two functions. Since we have no default decreases
+ * clauses in Viper, this question does not make sense for
+ * Viper.
+ */
+
+//Exercise 12.7
+/**
+ * Automatic induction
+ */
+
+//Exercise 12.8
+/**
+ * We have to prove a lemmaAppendSumUp without relying on
+ * automatic induction. We will simply do as we always have,
+ * since there is no automatic induction in Viper. 
+ */
+function lemmaAppendSumUp(lo: Int, hi: Int) : Unit
+    requires lo < hi
+    ensures SumUp(lo, hi -1) + F(hi - 1) == SumUp(lo, hi)
+    decreases hi - lo
+{
+    let _0 == (lemmaSameSums(lo, hi)) in 
+    let _1 == (lemmaSameSums(lo, hi - 1)) in unit()
+}
+
+//Exercise 12.9
+/**
+ * We are asked to prove the lemmaSumRanges.
+ */
+function lemmaSumRanges(lo: Int, mid: Int, hi: Int) : Unit
+    requires lo <= mid && mid <= hi
+    ensures SumUp(lo, mid) + SumUp(mid, hi) == SumUp(lo, hi)
+    decreases hi - lo
+{
+    (lo == mid) ? unit() : lemmaSumRanges(lo + 1, mid, hi)
+}

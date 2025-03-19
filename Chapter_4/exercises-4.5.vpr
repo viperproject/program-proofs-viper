@@ -1,0 +1,7 @@
+import "examples-4.5.vpr"
+
+function Mirror(t: Tree[Color]): Tree[Color]
+{
+    t.isLeaf ? t : Node(Mirror(t.right), Mirror(t.left))
+}
+

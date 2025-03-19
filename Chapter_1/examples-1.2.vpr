@@ -1,0 +1,9 @@
+// Viper will not continue verifying after the first assertion failed, so we only get a single error if we uncomment the asserts.
+method Triple(x: Int) returns (r: Int)
+{
+    var y: Int := 2 * x
+    r := x + y
+    //assert r == 10 * x
+    //assert r < 5
+    //assert false
+}

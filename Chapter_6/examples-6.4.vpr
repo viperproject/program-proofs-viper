@@ -1,0 +1,50 @@
+import "examples-6.3.vpr"
+
+/**
+ * At returns the element of index i of the list xs. The preconditions ensure
+ * that the i is a valid index. 
+ */
+function At(xs: List[Int], i: Int): Int
+  requires i >= 0
+  requires i < length(xs)
+  decreases xs
+{
+  (i==0) ? xs.value : At(xs.tail, i-1)
+}
+
+/**
+ * This lemma proves that accessing with At returns the same value as
+ * dropping the first i elements and then accessing the first element.
+ */
+function lemmaAtDropHead(xs: List[Int], i: Int): Unit
+  requires i >= 0
+  requires i < length(xs)
+  //ensures Drop(xs, i).isCons
+  ensures At(xs, i) == Drop(xs, i).value
+  decreases xs
+{
+  (i==0) ? unit() : lemmaAtDropHead(xs.tail, i-1)
+}
+
+/**
+ * This lemma proves that accessing an element with At of two appended lists
+ * will return the appropriate element of the first list or the second list,
+ * depending on the value of i.
+ */
+function lemmaAtAppend(xs: List[Int], ys: List[Int], i: Int): Unit
+  requires i >= 0
+  requires i < length(append(xs, ys))
+  /**
+   * Unlike the example in the book, we also need to provide an additional
+   * lemma call to ensure the postcondition is well-defined.
+   */
+  ensures let _ == (lemmaLengthAppend(xs.tail, ys)) in 
+          At(append(xs, ys), i) == ((i < length(xs)) ? At(xs, i) : At(ys, i - length(xs)))
+  decreases i
+{
+    /**
+     * The lemmaLengthAppend is required to fulfill the precondition of the recursive call.
+     */
+    (i==0) ? unit() : let _ == (lemmaLengthAppend(xs.tail, ys)) in 
+                        lemmaAtAppend(xs.tail, ys, i-1)
+}

@@ -1,0 +1,33 @@
+
+adt Expr {
+    // Viper does not offer an easy way to limit this to natural numbers
+    Const(val: Int)
+    // Viper does not have a built-in String type. We will represent with a sequence of integers here.
+    Var(str: Seq[Int])
+    Node(op: Op, args: List[Expr])
+}
+
+adt Op {
+    Add()
+    Mul()
+}
+
+adt List[T] {
+    Nil()
+    Cons(head: T, tail: List[T])
+}
+
+// TODO Prove termination
+function Eval(e: Expr, env: Map[Seq[Int], Int]): Int
+//decreases e
+{
+    e.isConst ? e.val : e.isVar ? (e.str in env ? env[e.str] : 0) : EvalList(e.args, e.op, env)
+}
+
+// To introduce variables in a (single expression) function body, we can use let expressions
+function EvalList(args: List[Expr], op: Op, env: Map[Seq[Int], Int]): Int
+//decreases args
+{
+    args.isNil ? (op.isAdd ? 0 : 1) : 
+        let v0 == (Eval(args.head, env)) in let v1 == (EvalList(args.tail, op, env)) in op.isAdd ? v0 + v1 : v0 * v1 
+}

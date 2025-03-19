@@ -1,0 +1,43 @@
+method Caller(){
+    var t: Int
+    t := Triple(18)
+    assert t < 100
+}
+
+// Viper will not continue verifying after the first assertion failed, so we only get a single error.
+method Triple(x: Int) returns (r: Int)
+ensures r == 3 * x
+{
+    var y: Int := 2 * x
+    r := x + y
+}
+
+// Viper will not continue verifying after the first assertion failed, so we only get a single error.
+method TripleEven(x: Int) returns (r: Int)
+requires x % 2 == 0
+ensures r == 3 * x
+{
+    var y: Int := x / 2
+    r := 6 * y
+}
+
+method Index(n: Int) returns (i: Int)
+requires 1 <= n
+ensures 0 <= i < n
+{
+    i := n / 2
+    // i := 0
+}
+
+
+method IndexCaller(){
+    var x: Int
+    var y: Int
+    x := Index(50)
+    y := Index(50)
+    //assert x == y
+}
+
+method Min(x: Int, y: Int) returns (m: Int)
+ensures m <= x && m <= y
+ensures m == x || m == y

@@ -1,0 +1,44 @@
+import "examples-13.1.vpr"
+
+function Fib(n: Int): Int
+    requires n >= 0
+    ensures result >= 0
+{
+    n < 2 ? n : Fib(n - 2) + Fib(n - 1)
+} 
+
+//Exercise 13.0
+/**
+ * In this exercise, we are asked about about the value of the following
+ * quantifier.
+ */
+method FibFive()
+{
+    // This will not verify
+    // assert forall x: Int :: 5 <= x ==> 5 <= Fib(x)
+}
+
+//Exercise 13.1
+/**
+ * In this exercise, we are asked about about the value of the following
+ * quantifier.
+ */
+method Fib143()
+{
+    // This will not verify. 143 is not part of the Fibonacci sequence, 144 is.
+    // assert exists x: Int :: 0 <= x && Fib(x) == 143
+}
+
+//Exercise 13.2
+/**
+ * We are asked to implement a linear search variant specification which will
+ * either return the first occurence which satisfies nearPi(x) or a negative
+ * number if no such element exists. Note that methods with specifications, but
+ * with no body, will not be verified by Viper.
+ */
+method LinearSearchFirstOccurence(a: Array[Int]) returns (n: Int)
+    requires iarrayAccessRead(a)
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures n < len(a)
+    ensures n < 0 || nearPi(iarrayLookup(a, n))
+    ensures 0 <= n ==> forall i: Int :: 0 <= i < n ==> !nearPi(iarrayLookup(a, i))

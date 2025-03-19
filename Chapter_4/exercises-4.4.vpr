@@ -1,0 +1,6 @@
+import "examples-4.4.vpr"
+
+function IsSwedishColoredTree(t: ColoredTree): Bool
+{
+    t.isLeaf ? IsSwedishFlagColors(t.color) : IsSwedishColoredTree(t.left) && IsSwedishColoredTree(t.right)
+}

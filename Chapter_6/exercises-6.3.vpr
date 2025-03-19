@@ -1,0 +1,67 @@
+import "examples-6.3.vpr"
+
+//Exercise 6.8
+/**
+ * This function is very similar to Drop. The only difference is that the 
+ * second parameter of the function can be greater than the length of the 
+ * list. In this case, we will just recurse on the function DropLiberal
+ * until we are left with Nil().
+ */
+function DropLiberal(xs: List[Int], n: Int): List[Int]
+  requires n >= 0 
+  decreases xs
+{
+  xs.isNil ? Nil() : ((n==0) ? xs : DropLiberal(xs.tail, n-1))
+}
+
+/**
+ * This lemma proves that Drop and DropLiberal will both return the same
+ * result if they receive the same input arguments.
+ */
+function lemmaDropLiberal(xs: List[Int], n: Int): Unit
+  requires n >= 0
+  requires n <= length(xs)
+  ensures Drop(xs, n) == DropLiberal(xs, n)
+  decreases xs
+{
+  xs.isNil ? unit() : ((n==0) ? unit() : lemmaDropLiberal(xs.tail, n-1))
+}
+
+/**
+ * This function is a liberal version of Take, which allows us to provide an index
+ * that might exceed the length of the list.
+ */
+function TakeLiberal(xs: List[Int], n: Int): List[Int]
+  requires n >= 0  
+  decreases xs
+{
+  xs.isNil ? Nil() : ((n==0) ? Nil() : Cons(xs.value, TakeLiberal(xs.tail, n-1)))
+}
+
+/**
+ * This lemma proves that Take and TakeLiberal will both return the same
+ * result if they receive the same input arguments.
+ */
+function lemmaTakeLiberal(xs: List[Int], n: Int): Unit
+  requires n >= 0
+  requires n <= length(xs)
+  ensures Take(xs, n) == TakeLiberal(xs, n)
+  decreases xs
+{
+  xs.isNil ? unit() : ( (n==0) ? unit() : lemmaTakeLiberal(xs.tail, n-1))
+}
+
+//Exercise 6.9
+/**
+ * Automatic induction
+ */
+
+//Exercise 6.10
+/**
+ * Automatic induction
+ */
+
+//Exercise 6.11
+/**
+ * Automatic induction
+ */

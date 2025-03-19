@@ -1,0 +1,12 @@
+ /**
+ * This ADT is the translation of the BraunTree created in the book.
+ * The BraunTree is an ADT with two cases. Either it is an empty leaf,
+ * or a Node. Each node consists of an Int value, as well as two BraunTrees.
+ * In the book, they use 'type PQueue = BraunTree'. This is not possible in 
+ * Viper. Therefore we will name the ADT PQueue immediately.
+ * This will allow us to follow the book more closely.
+ */
+adt PQueue {
+    Leaf()
+    Node(x: Int, left: PQueue, right: PQueue)
+}

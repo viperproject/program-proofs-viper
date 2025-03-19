@@ -1,0 +1,293 @@
+import "../Chapter_13/Array.vpr"
+
+/**
+ * In this method we set all the elements of the array a to the value d.
+ * Because Viper does not have generic methods, we simply stick to integer
+ * arrays.
+ */
+method InitArray(a: Array[Int], d: Int)
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures forall i: Int :: 0 <= i < len(a) ==> iarrayLookup(a, i) == d
+{
+    var n: Int := 0
+    while (n != len(a))
+        invariant 0 <= n <= len(a)
+        invariant iarrayAccessFull(a)
+        invariant forall i: Int :: 0 <= i < n ==> iarrayLookup(a, i) == d
+    {
+        iarrayUpdate(a, n, d)
+        n := n + 1
+    }
+}
+
+/**
+ * In this method we set all the elements of the 2D array a to the value d.
+ * Dafny also allows for modifies clauses to be used in loops. Because the
+ * default case for loops is to modify everything the method's modify clause
+ * wants to modify, it is usually omitted.
+ * In Viper, permissions have to be explicitly stated as loop invariants. We 
+ * are allowed to limit its accesses to a subset of already existing 
+ * permissions, as is shown in the inner loop. After the loop ends, its 
+ * permissions will be returned to the outer loop and so forth.
+ */
+method InitMatrix(a: Array2D[Int], d: Int)
+    requires iarray2DAccessFull(a)
+    ensures iarray2DAccessFull(a)
+    ensures forall i: Int, j: Int :: 0 <= i < len2D0(a) && 0 <= j < len2D1(a) ==> iarray2DLookup(a, i, j) == d
+{
+    var m: Int := 0
+    while (m != len2D0(a))
+        invariant 0 <= m <= len2D0(a)
+        invariant iarray2DAccessFull(a)
+        invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j < len2D1(a) ==> iarray2DLookup(a, i, j) == d
+    {
+        var n: Int := 0
+        while (n != len2D1(a))
+            invariant 0 <= n <= len2D1(a)
+            invariant iarray2DAccessFullRange(a, 0, m, 0, len2D1(a) - 1)
+            invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j < len2D1(a) ==> iarray2DLookup(a, i, j) == d
+            invariant forall i: Int :: 0 <= i < n ==> iarray2DLookup(a, m, i) == d
+        {
+            iarray2DUpdate(a, m, n, d)
+            n := n + 1
+        }
+        m := m + 1
+    }
+}
+
+/**
+ * In this method we increment all the elements of the array a by 1.
+ * To illustrate a debugging method for reasoning about the correctness of
+ * the loop, we have added a number of assertions, similar to how the book
+ * does it. Through that, we find out, that we need more information about
+ * the elements of the array that are not being changed per iteration.
+ */
+method IncrementArrayWithAsserts(a: Array[Int])
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures forall i: Int :: 0 <= i < len(a) ==> iarrayLookup(a, i) == old(iarrayLookup(a, i)) + 1
+{
+    var n: Int := 0
+    while (n != len(a))
+        invariant 0 <= n <= len(a)
+        invariant iarrayAccessFull(a)
+        invariant forall i: Int :: 0 <= i < n ==> iarrayLookup(a, i) == old(iarrayLookup(a, i)) + 1
+        invariant forall i: Int :: n <= i < len(a) ==> iarrayLookup(a, i) == old(iarrayLookup(a, i)) // Missing invariant
+    {
+        assert iarrayLookup(a, n) + 1 == old(iarrayLookup(a, n)) + 1 // Error
+        iarrayUpdate(a, n, iarrayLookup(a, n) + 1)
+        assert forall i: Int :: 0 <= i < n ==> iarrayLookup(a, i) == old(iarrayLookup(a, i)) + 1 // Holds
+        n := n + 1
+        assert forall i: Int :: 0 <= i < n ==> iarrayLookup(a, i) == old(iarrayLookup(a, i)) + 1 // Error
+        assert iarrayLookup(a, n - 1) == old(iarrayLookup(a, n - 1)) + 1 // Error
+        assert forall i: Int :: 0 <= i < n ==> iarrayLookup(a, i) == old(iarrayLookup(a, i)) + 1 // Error
+    } 
+}
+
+/**
+ * This is the same method as above, but without the assertions
+ */
+method IncrementArray(a: Array[Int])
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures forall i: Int :: 0 <= i < len(a) ==> iarrayLookup(a, i) == old(iarrayLookup(a, i)) + 1
+{
+    var n: Int := 0
+    while (n != len(a))
+        invariant 0 <= n <= len(a)
+        invariant iarrayAccessFull(a)
+        invariant forall i: Int :: 0 <= i < n ==> iarrayLookup(a, i) == old(iarrayLookup(a, i)) + 1
+        invariant forall i: Int :: n <= i < len(a) ==> iarrayLookup(a, i) == old(iarrayLookup(a, i))
+    {
+        iarrayUpdate(a, n, iarrayLookup(a, n) + 1)
+        n := n + 1
+    }
+}
+
+/**
+ * This method copies the elements of the array src to the array dst.
+ * For the aliasing case, we need to make sure that permissions for the array
+ * are not above one, otherwise we get access errors. Therefore we do not 
+ * request read access if the arrays are the same.
+ */
+method CopyArray(src: Array[Int], dst: Array[Int])
+    requires src != dst ==> iarrayAccessRead(src)
+    requires iarrayAccessFull(dst)
+    requires len(src) == len(dst)
+    ensures src != dst ==> iarrayAccessRead(src)
+    ensures iarrayAccessFull(dst)
+    ensures forall i: Int :: 0 <= i < len(src) ==> iarrayLookup(dst, i) == old(iarrayLookup(src, i))
+{
+    var n: Int := 0
+    while (n != len(src))
+        invariant src != dst ==> iarrayAccessRead(src)
+        invariant iarrayAccessFull(dst)
+        invariant 0 <= n <= len(src)
+        invariant forall i: Int :: 0 <= i < n ==> iarrayLookup(dst, i) == iarrayLookup(src, i)
+        invariant forall i: Int :: 0 <= i < len(src) ==> iarrayLookup(src, i) == old(iarrayLookup(src, i))
+    {
+        iarrayUpdate(dst, n, iarrayLookup(src, n))
+        n := n + 1
+    }        
+}
+
+/**
+ * This is a generic integer function that simply returns its input. It is 
+ * meant to demonstrate how Dafny can use functions as arguments to initialize
+ * arrays. In Viper, this function has to be included in a separate method.
+ */
+function F(i: Int): Int
+{
+    i
+}
+
+/**
+ * This method initializes all values of the array a to the result of the 
+ * function F.
+ * Viper does not have lambdas and functions as arguments, so we have to create
+ * a separate method for each individual array assignment lambda from Dafny. 
+ * This is tedious to program, but easier to prove. The following 
+ * arrayConstructor methods are the examples from the book.
+ */
+method ArrayConstructorF(n: Int) returns (a: Array[Int])
+    requires n >= 0
+    ensures iarrayAccessFull(a)
+    ensures forall j: Int :: 0 <= j < len(a) ==> iarrayLookup(a, j) == F(j)
+{
+    a := iarrayInit(n)
+    var i: Int := 0
+    while (i != n)
+        invariant 0 <= i <= n
+        invariant iarrayAccessFull(a)
+        invariant forall j: Int :: 0 <= j < i ==> iarrayLookup(a, j) == F(j)
+    {
+        iarrayUpdate(a, i, F(i))
+        i := i + 1
+    }
+}
+
+/**
+ * This method initializes all values of the array a to the square of their
+ * indeces.
+ */
+method ArrayConstructorSquared(n: Int) returns (a: Array[Int])
+    requires n >= 0
+    ensures iarrayAccessFull(a)
+    ensures forall j: Int :: 0 <= j < len(a) ==> iarrayLookup(a, j) == j * j
+{
+    a := iarrayInit(n)
+    var i: Int := 0
+    while (i != n)
+        invariant 0 <= i <= n
+        invariant iarrayAccessFull(a)
+        invariant forall j: Int :: 0 <= j < i ==> iarrayLookup(a, j) == j * j
+    {
+        iarrayUpdate(a, i, i * i)
+        i := i + 1
+    }
+}
+
+/**
+ * This method initializes all values of the array a to 0.
+ */
+method ArrayConstructorZero(n: Int) returns (a: Array[Int])
+    requires n >= 0
+    ensures iarrayAccessFull(a)
+    ensures forall j: Int :: 0 <= j < len(a) ==> iarrayLookup(a, j) == 0
+{
+    a := iarrayInit(n)
+    var i: Int := 0
+    while (i != n)
+        invariant 0 <= i <= n
+        invariant iarrayAccessFull(a)
+        invariant forall j: Int :: 0 <= j < i ==> iarrayLookup(a, j) == 0
+    {
+        iarrayUpdate(a, i, 0)
+        i := i + 1
+    }
+}
+
+/**
+ * This method initializes the matrix a to the value d on the diagonal and 0
+ * elsewhere.
+ */
+method MatrixConstructorDiagonal(rows: Int, cols: Int, d: Int) returns (a: Array2D[Int])
+    requires rows >= 0 && cols >= 0
+    ensures iarray2DAccessFull(a)
+    ensures forall i: Int, j: Int :: 0 <= i < len2D0(a) && 0 <= j < len2D1(a) && i == j ==> iarray2DLookup(a, i, j) == d
+    ensures forall i: Int, j: Int :: 0 <= i < len2D0(a) && 0 <= j < len2D1(a) && i != j ==> iarray2DLookup(a, i, j) == 0
+{
+    a := iarray2DInit(rows, cols)
+    var m: Int := 0
+    while (m != len2D0(a))
+        invariant 0 <= m <= len2D0(a)
+        invariant iarray2DAccessFull(a)
+        invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j < len2D1(a) && i == j ==> iarray2DLookup(a, i, j) == d
+        invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j < len2D1(a) && i != j ==> iarray2DLookup(a, i, j) == 0
+        {
+            var n: Int := 0
+            while (n != len2D1(a))
+                invariant 0 <= n <= len2D1(a)
+                invariant iarray2DAccessFullRange(a, 0, m, 0, len2D1(a) - 1)
+                invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j < len2D1(a) && i == j ==> 
+                    iarray2DLookup(a, i, j) == d
+                invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j < len2D1(a) && i != j ==>
+                    iarray2DLookup(a, i, j) == 0
+                invariant forall i: Int :: 0 <= i < n && m == i ==> iarray2DLookup(a, m, i) == d
+                invariant forall i: Int :: 0 <= i < n && m != i ==> iarray2DLookup(a, m, i) == 0
+            {
+                if (m == n)
+                {
+                    iarray2DUpdate(a, m, n, d)
+                }
+                else
+                {
+                    iarray2DUpdate(a, m, n, 0)
+                }
+                n := n + 1
+            }
+            assert iarray2DAccessFull(a)
+        }
+}
+
+/**
+ * This method initializes the array a to the values of the array b.
+ */
+method ArrayConstructorCopy(a: Array[Int]) returns (b: Array[Int])
+    requires iarrayAccessRead(a)
+    ensures iarrayAccessRead(a) && iarrayAccessFull(b)
+    ensures len(a) == len(b)
+    ensures forall i: Int :: 0 <= i < len(a) ==> old(iarrayLookup(a, i)) == iarrayLookup(b, i)
+{
+    b := iarrayInit(len(a))
+    CopyArray(a, b)
+}
+
+/**
+ * This method creates a sequence of given length, where the elements represent
+ * the even numbers from 0 to n - 1 as Booleans.
+ * Because there is no easy way to create a sequence of arbitrary length, we
+ * have to concatenate the number of desired elements to the sequence in a loop.
+ */
+method SequenceConstructorEvenNumbers(n: Int) returns (s: Seq[Bool])
+    requires n >= 0
+    ensures |s| == n
+    ensures forall i: Int :: 0 <= i < |s| ==> s[i] == (i % 2 == 0)
+{
+    s := Seq()
+    var i: Int := 0
+    while (i != n)
+        invariant 0 <= i <= n
+        invariant |s| == i
+        invariant forall j: Int :: 0 <= j < i ==> s[j] == (j % 2 == 0)
+    {
+        s := s ++ Seq(i % 2 == 0)
+        i := i + 1
+    }
+}
+
+/**
+ * Viper has neither aggregate statements nor forall loops. Do not confuse
+ * the forall quantifier with the Dafny forall loop.
+ */

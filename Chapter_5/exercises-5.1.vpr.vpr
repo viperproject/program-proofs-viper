@@ -1,0 +1,41 @@
+function More(x: Int): Int {
+  x <= 0 ? 1 : More(x - 2) + 3
+}
+
+/* lemma */
+method Increasing(x: Int)
+  ensures x < More(x)
+
+
+method ExampleLemmaUse1(a: Int)
+{    
+  var b: Int
+  b := More(a)
+  Increasing(a)
+  Increasing(b)
+  b := More(b)
+  assert 2 <= b - a
+}
+
+method ExampleLemmaUse2(a: Int)
+{    
+  var b: Int
+  b := More(a)
+  Increasing(b)
+  Increasing(a)
+  b := More(b)
+  assert 2 <= b - a
+}
+
+method ExampleLemmaUse3(a: Int)
+{    
+  var b: Int
+  Increasing(a)
+  b := More(a)
+  b := More(b)
+  if (a < 1000) {
+    Increasing(More(a))
+    assert 2 <= b - a
+  }
+  assert 2 <= b - a || 200 <= a
+}

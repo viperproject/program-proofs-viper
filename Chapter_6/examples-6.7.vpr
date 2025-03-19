@@ -1,0 +1,66 @@
+import "examples-6.6.vpr"
+
+/**
+ * This function is similar to the function ReverseAux in examples-6.6.vpr. The
+ * difference here is that we prove the postcondition in the function itself, 
+ * rather than using a separate lemma.
+ *
+ * If we compare this example to the one in the book, we will see that we need
+ * less specifications compared to the calc block in Dafny. Viper is able to infer
+ * some of these things automatically.
+ */
+function ReverseAux2(xs: List[Int], ac: List[Int]): List[Int]
+  ensures result == append(SlowReverse(xs), ac)
+  decreases xs
+{
+  xs.isNil ? ac : let _0 == ((lemmaSnocAppend(SlowReverse(xs.tail), xs.value))) in 
+                      let _1 == ((lemmaAppendAssociative(SlowReverse(xs.tail), Cons(xs.value, Nil()), ac))) in 
+                      ReverseAux2(xs.tail, Cons(xs.value, ac))
+}
+
+/**
+ * This lemma proves the correctness of our new function ReverseAux2
+ * by comparing the function to the result of append with a list that
+ * will be reversed by SlowReverse and the list that has already been
+ * reversed.
+ */
+function lemmaReverseAuxHelper(xs: List[Int], ac: List[Int]): Unit
+  requires xs.isCons
+  ensures ReverseAux2(xs.tail, Cons(xs.value, ac)) == append(SlowReverse(xs), ac)
+  decreases xs
+{
+  let _0 == (lemmaSnocAppend(SlowReverse(xs.tail), xs.value)) in 
+  let _1 == (lemmaAppendAssociative(SlowReverse(xs.tail), Cons(xs.value, Nil()), ac)) in 
+  unit()
+}
+
+/**
+ * This lemma proves that if we use the At function on a
+ * list with a certain index i, then we will get the same element
+ * back as if we use the At function on the reversed
+ * list and subtract the index from the length - 1.
+ */
+function lemmaAtReverse(xs: List[Int], i: Int): Unit
+  requires i >= 0
+  requires i < length(xs)
+  ensures let _ == (lemmaLengthReverse(xs)) in  
+          At(xs, i) == At(Reverse(xs), length(xs) - 1 - i) 
+  decreases xs
+{
+  xs.isNil ? unit()
+            :
+            (0 < i) ? let _0 == (lemmaLengthReverse(xs)) in
+                      let _1 == (lemmaReverseAuxSlowCorrect(xs.tail, Cons(xs.value, Nil()))) in
+                      let _2 == (lemmaReverseCorrect(xs.tail)) in
+                      let _3 == (lemmaAtAppend(Reverse(xs.tail), Cons(xs.value, Nil()), length(xs) - 1 - i)) in
+                      let _4 == (lemmaLengthReverse(xs.tail)) in
+                      let _5 == (lemmaAtReverse(xs.tail, i - 1)) in 
+                      unit()
+                      :
+                      let _0 == (lemmaLengthReverse(xs)) in
+                      let _1 == (lemmaReverseAuxSlowCorrect(xs.tail, Cons(xs.value, Nil()))) in
+                      let _2 == (lemmaReverseCorrect(xs.tail)) in
+                      let _3 == (lemmaAtAppend(Reverse(xs.tail), Cons(xs.value, Nil()), length(xs) - 1 - i)) in
+                      unit()
+}
+

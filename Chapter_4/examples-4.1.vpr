@@ -1,0 +1,12 @@
+import "examples-4.0.vpr"
+
+// Viper does not have match expressions, but generates discriminators for ADTs automatically
+function BlueCount(t: BYTree): Int
+{
+    t.isBlueLeaf ? 1 : t.isYellowLeaf ? 0 : BlueCount(t.left) + BlueCount(t.right)
+}
+
+function LeftDepth(t: BYTree): Int
+{
+    t.isBlueLeaf ? 0 : t.isYellowLeaf ? 0 : 1 + LeftDepth(t.left)
+}

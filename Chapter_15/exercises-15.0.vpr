@@ -1,0 +1,144 @@
+import "examples-15.0.vpr"
+
+// Exercise 15.0
+/**
+ * This method takes an array of colors a, and sorts it in place such that all
+ * the red elements are at the beginning, all the white elements are in the
+ * middle, and all the blue elements are at the end, equivalent to the Dutch
+ * Flag problem. Only this time, the unsorted section is after the red section.
+ * We therefore perform the sorting in reverse order starting from the end of
+ * the array, to achieve the same efficiency of elements being swapped.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one of the colors.
+ */
+method DutchFlagUnsortedAfterRed(a: Array[Color])
+    requires carrayAccessFull(a)
+    ensures carrayAccessFull(a)
+    ensures forall i: Int, j: Int :: 0 <= i < j < len(a) ==> Below(carrayLookup(a, i), carrayLookup(a, j))
+    // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+{
+    var r: Int := 0
+    var w: Int := len(a)
+    var b: Int := len(a)
+    while (r < w)
+        invariant carrayAccessFull(a)
+        invariant 0 <= r <= w <= b <= len(a)
+        invariant forall i: Int :: 0 <= i < r ==> carrayLookup(a, i).isRed
+        invariant forall i: Int :: w <= i < b ==> carrayLookup(a, i).isWhite
+        invariant forall i: Int :: b <= i < len(a) ==> carrayLookup(a, i).isBlue
+        // invariant multiset(iarrayFull(a)) == multiset(iarrayFull(old(a)))
+    {
+        var curr: Color := carrayLookup(a, w - 1)
+        if (curr.isWhite)
+        {
+            w := w - 1
+        }
+        elseif (curr.isBlue)
+        {
+            carrayUpdate(a, w - 1, carrayLookup(a, b - 1))
+            carrayUpdate(a, b - 1, curr)
+            b := b - 1
+            w := w - 1
+        }
+        else
+        {
+            carrayUpdate(a, w - 1, carrayLookup(a, r))
+            carrayUpdate(a, r, curr)
+            r := r + 1
+        }
+    }
+}
+
+// Exercise 15.1
+/**
+ * This method sorts an array of Booleans in place such that all the false
+ * elements are at the beginning, and all the true elements are at the end.
+ * The same tactic as the Dutch Flag problem is used.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one of the colors
+ */
+method BooleanFlag(a: Array[Bool])
+    requires barrayAccessFull(a)
+    ensures barrayAccessFull(a)
+    ensures forall i: Int, j: Int :: 0 <= i < j < len(a) ==> 
+        barrayLookup(a, i) == barrayLookup(a, j) || (barrayLookup(a, i) == false && barrayLookup(a, j) == true) 
+    // ensures bmultiset(barrayFull(a)) == bmultiset(barrayFull(old(a))) 
+{
+    var f: Int := 0
+    var t: Int := len(a)
+    while (f < t)
+        invariant barrayAccessFull(a)
+        invariant 0 <= f <= t <= len(a)
+        invariant forall i: Int :: 0 <= i < f ==> barrayLookup(a, i) == false
+        invariant forall i: Int :: t <= i < len(a) ==> barrayLookup(a, i) == true
+        // invariant bmultiset(barrayFull(a)) == bmultiset(barrayFull(old(a)))
+    {
+        var curr: Bool := barrayLookup(a, f)
+        if (!curr)
+        {
+            f := f + 1
+        }
+        else
+        {
+            barrayUpdate(a, f, barrayLookup(a, t - 1))
+            barrayUpdate(a, t - 1, curr)
+            t := t - 1
+        }
+    }
+}
+
+// Exercise 15.2
+/**
+ * Because Viper does not support function parameters and generic types as
+ * paramters of functions or methods, the following method is not possible to
+ * implement in Viper in this fashion.
+ */
+
+// Exercise 15.3
+// TODO
+// method DutchFlagNoSwap(a: Array[Int])
+//     requires iarrayAccessFull(a)
+//     requires forall i: Int :: 0 <= i < len(a) ==> iarrayLookup(a, i) == RED || iarrayLookup(a, i) == WHITE || iarrayLookup(a, i) == BLUE
+//     ensures iarrayAccessFull(a)
+//     ensures forall i: Int :: 0 <= i < len(a) ==> iarrayLookup(a, i) == RED || iarrayLookup(a, i) == WHITE || iarrayLookup(a, i) == BLUE
+//     ensures forall i: Int, j: Int :: 0 <= i < j < len(a) ==> Below(iarrayLookup(a, i), iarrayLookup(a, j))
+//     // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+// {
+//     var r: Int := 0
+//     var w: Int := 0
+//     var b: Int := 0
+//     var i: Int := 0
+//     while (i != len(a))
+//         invariant iarrayAccessFull(a)
+//         invariant forall j: Int :: 0 <= j < len(a) ==> iarrayLookup(a, j) == RED || iarrayLookup(a, j) == WHITE || iarrayLookup(a, j) == BLUE
+//         invariant 0 <= r <= i <= len(a)
+//         invariant 0 <= w <= i <= len(a)
+//         invariant 0 <= b <= i <= len(a)
+//         invariant r + w + b == i
+//         // invariant r == RED in multiset(iarrayTake(a, i))
+//         // invariant w == WHITE in multiset(iarrayTake(a, i))
+//         // invariant b == BLUE in multiset(iarrayTake(a, i))
+//         // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+//     {
+//         var curr: Int := iarrayLookup(a, i)
+//         if (curr == RED)
+//         {
+//             r := r + 1
+//         }
+//         elseif (curr == WHITE)
+//         {
+//             w := w + 1
+//         }
+//         else
+//         {
+//             b := b + 1
+//         }
+//         i := i + 1
+//     }
+// }

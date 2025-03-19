@@ -1,0 +1,8 @@
+// We can only do things with discriminators, so 4.4 does not make sense and 4.5 only works that way
+
+import "examples-4.0.vpr"
+
+function HasLeftTree(t: BYTree, u: BYTree): Bool
+{
+    t.isBlueLeaf ? false : t.isYellowLeaf ? false : t.left == u ? true : HasLeftTree(t.left, u) || HasLeftTree(t.right, u)
+}

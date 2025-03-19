@@ -1,0 +1,51 @@
+//Exercise 11.8
+/**
+ * For this exercise we have to import the definition of
+ * List[Int] and the well-founded order that we defined in Chapter 6.1.
+ */
+import "../Chapter_6/examples-6.1.vpr"
+
+/**
+ * This exercise asks us to create a method that repeats
+ * a value d n times in a List and returns the List.
+ */
+method nTimesD(d: Int, N: Int) returns (xs: List[Int])
+    requires 0 <= N
+    ensures length(xs) == N
+    decreases
+{
+    xs := Nil()
+    var temp: Int := N
+    while(temp > 0)
+        invariant temp >= 0
+        invariant length(xs) == N - temp
+        decreases temp
+    {
+        xs := Cons(d, xs)
+        temp := temp - 1
+    }
+}
+
+//Exercise 11.9
+/**
+ * This method should simply increase the length of a list
+ * by two. The Elements do not have to be duplicated, they
+ * can be anything.
+ */
+method Duplicate(xs: List[Int]) returns (ys: List[Int])
+    ensures length(ys) == 2 * length(xs)
+    decreases
+{
+    ys := xs
+    var n: Int := length(xs)
+    var i: Int := n
+    var d: Int := 42
+    while(i > 0)
+        invariant i >= 0
+        invariant length(ys) == length(xs) + n - i
+        decreases i
+    {
+        ys := Cons(d, ys)
+        i := i - 1
+    }
+}

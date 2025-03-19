@@ -1,0 +1,68 @@
+import "Array.vpr"
+
+/**
+ * These isSorted functions all equivalent in their functionality and check 
+ * whether an Array[Int] is sorted in ascending order. 
+ */
+function isSorted0(a: Array[Int]): Bool
+    requires iarrayAccessRead(a)
+    ensures forall i: Int, j: Int :: 0 <= i < j < len(a) ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+
+function isSorted1(a: Array[Int]): Bool
+    requires iarrayAccessRead(a)
+    ensures forall i: Int :: 0 <= i ==> forall j: Int :: i < j < len(a) ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+
+function isSorted2(a: Array[Int]): Bool
+    requires iarrayAccessRead(a)
+    ensures forall i: Int :: 0 <= i < len(a) - 1 ==> iarrayLookup(a, i) <= iarrayLookup(a, i + 1)
+
+/**
+ * This is a method that returns the earliest insertion point for a key in an
+ * Array[Int] that is sorted in ascending order, meaning either the leftmost 
+ * occurrence of the key or the index where to insert the key, if the key is 
+ * not present in the array. To ensure sortedness, we can either write the 
+ * required sortedness criterium into the loop invariant and the postcondition 
+ * or we can declare that we didn't modify the array at all in the loop 
+ * invariant and the postcondition, using the untouched macro. The latter is 
+ * done here. 
+ */
+method BinarySearch(a: Array[Int], key: Int) returns (n: Int)
+    requires iarrayAccessRead(a) && iarraySorted(a)
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures 0 <= n <= len(a)
+    ensures forall i: Int :: 0 <= i < n ==> iarrayLookup(a, i) < key
+    ensures forall i: Int :: n <= i < len(a) ==> key <= iarrayLookup(a, i)
+{
+    var lo: Int := 0 
+    var hi: Int := len(a)
+    while (lo < hi)
+        invariant iarrayAccessRead(a) && iarrayUntouched(a)
+        invariant 0 <= lo <= hi <= len(a)
+        invariant forall i: Int :: 0 <= i < lo ==> iarrayLookup(a, i) < key
+        invariant forall i: Int :: hi <= i < len(a) ==> key <= iarrayLookup(a, i)
+    {
+        var mid: Int := (lo + hi) / 2
+        if (iarrayLookup(a, mid) < key)
+        {
+            lo := mid + 1
+        }
+        else
+        {
+            hi := mid
+        }
+    }
+    n := lo
+}
+
+/**
+ * This method checks whether the "earliest insertion point" specification is
+ * correctly implemented in the BinarySearch method above.
+ */
+method Contains(a: Array[Int], key: Int) returns (present: Bool)
+    requires iarrayAccessRead(a) && iarraySorted(a)
+    ensures iarrayAccessRead(a) && iarrayUntouched(a)
+    ensures present == exists i: Int :: 0 <= i < len(a) && iarrayLookup(a, i) == key
+{
+    var n: Int := BinarySearch(a, key)
+    present := n < len(a) && iarrayLookup(a, n) == key
+}

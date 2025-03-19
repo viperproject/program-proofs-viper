@@ -1,0 +1,15 @@
+// Viper does not have a Nat type, so we use Int with the additional precondition
+// Also, Viper functions must consist of a single expression, so instead of an if-statement, we use a conditional expression.
+function Fib(n: Int): Int
+requires n >= 0
+decreases n
+{
+    n < 2 ? n : Fib(n - 1) + Fib(n - 2)
+}
+
+function SeqSum(s: Seq[Int], lo: Int, hi: Int): Int
+requires 0 <= lo <= hi <= |s|
+decreases hi - lo
+{
+    lo == hi ? 0 : s[lo] + SeqSum(s, lo + 1, hi)
+}

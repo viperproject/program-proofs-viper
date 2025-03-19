@@ -1,0 +1,39 @@
+import "examples-10.0.vpr"
+
+//Exercise 10.0
+/**
+ * In this exercise they want to create a small test module to
+ * test the correctness of the Queue. Instead of a module we
+ * will use a method and test the Queue inside the method.
+ */
+method SmallTest(x: Int, y: Int)
+{
+    var a: Int
+    var b: Int
+    a := 5
+    b := 7
+    var pq0: PQueue
+    var pq1: PQueue
+    var pq2: PQueue
+    var _: Unit
+    pq0 := Empty()
+    pq1 := Insert(pq0, a)
+    pq2 := Insert(pq1, b)
+    var c: Int
+    var d: Int
+    _ := lemmaEmptyCorrect()
+    _ := lemmaInsertCorrect(pq0, a)
+    _ := lemmaInsertCorrect(pq1, b)
+    _ := lemmaIsEmptyCorrect(pq2)
+    assert (a in Elements(pq2)) > 0
+    assert (b in Elements(pq2)) > 0
+    
+    c := getLeft(RemoveMin(pq2))
+    _ := lemmaRemoveMinCorrect(pq2)
+    _ := lemmaIsEmptyCorrect(getRight(RemoveMin(pq2)))
+    _ := lemmaRemoveMinCorrect(getRight(RemoveMin(pq2)))
+    d := getLeft(RemoveMin(getRight(RemoveMin(pq2))))
+
+    assert c == a
+    assert d == b
+}

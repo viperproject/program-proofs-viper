@@ -1,0 +1,112 @@
+import "examples-7.1.vpr"
+
+//Exercise 7.1
+/**
+ * This exercise is not possible due to Viper not supporting match 
+ * statements.
+ */
+
+//Exercise 7.2 
+/**
+ * For this exercise, we have to define the Less function without any match
+ * statement, without the discriminator isSuc and without the implication operator.
+ */
+function Less2(x: Unary, y: Unary): Bool
+    decreases x
+{
+    (y != Zero()) && (x.isZero || Less2(x.pred, y.pred))
+}
+
+
+//Exercise 7.3
+/**
+ * Here we define a lemma that proves that exactly one of the following
+ * three statement holds: Less(x, y), x==y, Less(y,x). 
+ */
+function lemmaLessTrichotomous(x: Unary, y: Unary): Unit
+    /**
+     * At least one of three statements holds
+    */
+    ensures Less(x, y) || x == y || Less(y, x)
+    /**
+     * At most one of the three statements holds
+     */
+    ensures Less(x, y) ==> !(x == y || Less(y, x))
+    ensures x == y ==> !(Less(x, y) || Less(y, x))
+    ensures Less(y, x) ==> !(Less(x, y) || x == y)
+    decreases x, y
+{
+    (x.isZero && y.isZero) ? unit() 
+        : 
+        (x.isZero && y.isSuc) ? lemmaLessTrichotomous(x, y.pred) 
+            : 
+            (x.isSuc && y.isZero) ? lemmaLessTrichotomous(x.pred, y) 
+                : 
+                lemmaLessTrichotomous(x.pred, y.pred)
+}
+
+//Exercise 7.4 
+/**
+ * Just like with the function Less, we again define the function Below
+ * to be a function returning a Boolean value.
+ */
+function Below(x: Unary, y: Unary): Bool
+    decreases x
+{
+    Less(x, y) || x == y
+}
+
+/**
+ * The exercise asks us to prove the total order of the function Below. For
+ * this we have to prove reflexivity, transitivity, antisymmetry and 
+ * totality. The next 4 lemmas will prove those.
+  */
+function lemmaBelowReflexive(x: Unary): Unit
+    ensures Below(x, x)
+    decreases x
+{
+    unit()
+}
+
+function lemmaBelowTransitive(x: Unary, y: Unary, z: Unary): Unit
+    /**
+     * Just like with lemmaLessTransitive in the file examples-7.1.vpr,
+     * we could write the specification in two different ways.
+     */
+    // requires Below(x, y) && Below(y, z)
+    // ensures Below(x, z)
+    ensures Below(x, y) && Below(y, z) ==> Below(x, z)
+    decreases x
+{
+    (x == y) ? unit() 
+        : 
+        (y == z) ? unit() 
+            : 
+            lemmaLessTransitive(x, y, z)
+}
+
+function lemmaBelowAntisymmetric(x: Unary, y: Unary): Unit
+    ensures (Below(x, y) && Below(y, x)) ==> x == y
+    decreases x, y
+{
+    (x==y) ? x.isSuc ? lemmaBelowAntisymmetric(x.pred, y.pred) 
+                : 
+                unit() 
+        : 
+        let _ == (lemmaLessTrichotomous(x, y)) in 
+        unit()
+}
+
+function lemmaBelowTotal(x: Unary, y: Unary): Unit
+    ensures Below(x, y) || Below(y, x)
+    decreases x
+{
+    Less(x, y) ? x.isSuc ? lemmaBelowTotal(x.pred, y.pred) 
+                        : 
+                        unit()
+            : 
+            y.isSuc ?  let _ == (lemmaLessTrichotomous(x, y)) in 
+                        lemmaBelowTotal(x.pred, y.pred) 
+                : 
+                unit()
+}

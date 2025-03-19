@@ -1,0 +1,178 @@
+/**
+ * This chapter in the book is mainly focused on while loops.
+ * For the start of this Chapter, we will not use termination
+ * proofs, since they will be introduced in chapter 11.2.
+ */
+
+ method Loop11020(x: Int)
+    requires x % 2 == 0
+ {
+    var y: Int
+    y := x
+    /**
+     * As long as x is even, the method verifies, otherwise x would
+     * violate the invariant upon entry.
+     */
+    while(y < 300)
+        invariant y % 2 == 0
+    /**
+     * Dafny uses abstract loops, so loops without a body. Viper does not support this.
+     * If we were to leave the body empty then we would never terminate on all traces
+     * where y < 300.
+     *
+     * To avoid this, we will create a simple loop body for all the functions in this section.
+     */
+    {
+        y := y + 2
+    }
+ }
+
+method Loop11021(a: Int)
+        requires a <= 99 && a >= 0
+{
+    var b: Int
+    b := a
+    while(b%2==1)
+        invariant 0 <= b && b <= 100
+    {
+        b := b + 1
+    }
+}
+
+method Loop11022()
+{
+    var c: Int
+    c := 2
+    while(c < 50)
+        invariant c % 2 == 0
+    {
+        c := 2 + c
+    }
+
+    assert 50 <= c && c % 2 == 0
+}
+
+method Loop11023()
+{
+    var d: Int
+    d := 0
+    while (d % 2 == 0)
+        invariant 0 <= d && d <= 20
+    {
+        if (d == 0)
+        {
+            d := d + 1
+        }
+        else 
+        {
+            d := d - 1
+        }
+    }
+    /**
+     * No matter what the function body is, we cannot prove that d == 19.
+     * This is because d could be any odd number between 1 to 19.
+     *
+     * assert d == 19
+     */
+}
+
+method Loop11030()
+{
+    var i: Int
+    /**
+     * Here we are introduced to i as a loop index.
+     */
+    i := 0
+    while (i != 100)
+        invariant 0 <= i && i <= 100
+    {
+        i := i + 1
+    }
+
+    assert i == 100
+}
+
+method Loop11031()
+{
+    var i: Int
+    i := 0
+    while(i < 100)
+        invariant 0 <= i && i <= 100
+    {
+        i := i + 1
+    }
+
+    assert i == 100
+
+    /**
+     * i := 0
+     * while(i < 100)
+     *     invariant true
+     * assert i == 100
+     *
+     * This is not provable, since here the negation of the
+     * loop condition and the invariant do not guarantee 
+     * i == 100 upon exit of the loop.
+     */
+}
+
+method Loop11040()
+{
+    var x: Int
+    var y: Int
+    x := 0
+    y := 0
+    while(x < 300)
+        invariant 2*x == 3*y
+    {
+        x := x + 3
+        y := y + 2
+    }
+
+    assert 200 <= y
+}
+
+method Loop11041()
+{
+    var x: Int
+    var y: Int
+    x := 0
+    y := 191
+    while(!(0 <= y && y < 7))
+        invariant 7 * x + y == 191
+    {
+        x := x + 1
+        y := y - 7
+    }
+
+    assert x == 191 / 7 && y == 191 % 7
+}
+
+method Loop11042()
+{
+    var n: Int
+    var s: Int
+    n := 0
+    s := 0
+    while(n!=33)
+        invariant s == n * (n - 1) / 2
+    {
+        s := s + n
+        n := n + 1
+    }
+}
+
+method Loop11043()
+{
+    var r: Int
+    var N: Int
+    r := 0
+    N := 104
+    while((r + 1) * (r + 1) <= N)
+        invariant 0 <= r && r * r <= N
+    {
+        r := r + 1
+    }
+
+    assert 0 <= r && r * r <= N && N < (r + 1) * (r + 1)
+}

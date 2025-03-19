@@ -1,0 +1,249 @@
+import "../definitions.vpr"
+
+/**
+ * This function counts the number of occurrences of the integer x in the 
+ * subsequence of a starting at index lo and ending at index hi - 1. Because
+ * Viper does not have generic functions and because it does not matter for the
+ * example, we simply use sequences of integers.
+ * The postcondition requires the hi-lo bounds check for the verifier to reason 
+ * about the entry into the loop of the FindWinner method.
+ */
+function Count(a: Seq[Int], lo: Int, hi: Int, x: Int): Int
+    requires 0 <= lo <= hi <= |a|
+    ensures 0 <= result <= hi - lo
+{
+    lo == hi ? 0 : Count(a, lo, hi - 1, x) + (a[hi - 1] == x ? 1 : 0)
+}
+
+/**
+ * This lemma proves that the count function can be subdivided into two count
+ * function calls on the left and right half of the sequence. Because Viper 
+ * does not have automatic induction, we have to manually prove this lemma.
+ */
+function lemmaSplitCount(a: Seq[Int], lo: Int, mid: Int, hi: Int, x: Int): Unit
+    requires 0 <= lo <= mid <= hi <= |a|
+    ensures Count(a, lo, hi, x) == Count(a, lo, mid, x) + Count(a, mid, hi, x)
+{
+    hi == mid ? unit() : lemmaSplitCount(a, lo , mid, hi - 1, x)
+}
+
+/**
+ * This lemma proves that the counting of two distinct elements cannot exceed
+ * the length of the subsequence of a starting at index lo and ending at index 
+ * hi - 1 on which we are counting. Because Viper does not have automatic 
+ * induction, we have to manually prove this lemma.
+ */
+function lemmaDistinctCounts(a: Seq[Int], lo: Int, hi: Int, x: Int, y: Int): Unit
+    requires 0 <= lo <= hi <= |a|
+    ensures x != y ==> Count(a, lo, hi, x) + Count(a, lo, hi, y) <= hi - lo
+{
+    lo == hi ? unit() : lemmaDistinctCounts(a, lo, hi - 1, x, y)
+}
+
+/**
+ * This function decides whether the integer x has a strict majority within the
+ * subsequence of a starting at index lo and ending at index hi - 1 on which we
+ * are counting. This means that the number of occurrences of x is strictly
+ * greater than half the length of the subsequence. 
+ */
+function HasMajority(a: Seq[Int], lo: Int, hi: Int, x: Int): Bool
+    requires 0 <= lo <= hi <= |a|
+{
+    hi - lo < 2 * Count(a, lo, hi, x)
+}
+
+/**
+ * Viper does not have the assign-such-that statement. The assign-such-that 
+ * statement adds a verification condition to its returned value, such that it
+ * holds. In Viper, we do this by turning it into an abstract function, which
+ * ensures the desired condition through its postcondition and requires the 
+ * necessary conditions to be able to prove it in its precondition. In this 
+ * case, we ensure that the returned Int has a strict majority within the whole
+ * sequence a. We also require that such an element exists, to make sure this 
+ * statment can be proven.
+ */
+function assignSuchThatMajority(a: Seq[Int]): Int
+    requires exists K: Int :: HasMajority(a, 0, |a|, K)
+    ensures HasMajority(a, 0, |a|, result)
+
+/**
+ * This method identifies the majority element within the sequence a, referred 
+ * to as the winner in the book, assuming that such an element exists. It does
+ * so by calling the actual FindWinner implementation and providing it with
+ * information about the majority element in the same way as Dafnys 
+ * assign-such-that statement does.
+ */
+method FindWinner_(a: Seq[Int]) returns (k: Int)
+    requires exists K: Int :: HasMajority(a, 0, |a|, K)
+    ensures HasMajority(a, 0, |a|, k)
+{
+    var K: Int := assignSuchThatMajority(a)
+    k := FindWinner(a, K)
+}
+
+/**
+ * This method identifies the majority element within the sequence a, referred 
+ * to as the winner in the book, assuming that such an element exists. It would
+ * be entirely possible in Viper to trivially assign k := K and have it verify.
+ * The assign-such-that statement creates the solution K for us, to help us 
+ * reason about the progress of the method. We employ the same approach, but 
+ * have to be weary not to use information from K in anything but 
+ * specifications and invariants. Viper does not have ghost variables and thus,
+ * this distinction is left to the programmer.
+ */
+method FindWinner(a: Seq[Int], K: Int) returns (k: Int)
+    requires HasMajority(a, 0, |a|, K)
+    ensures k == K
+{
+    k := a[0]
+    var lo: Int := 0
+    var hi: Int := 1
+    var c: Int := 1
+    while (hi < |a|)
+        invariant 0 <= lo <= hi <= |a|
+        invariant c == Count(a, lo, hi, k)
+        invariant HasMajority(a, lo, hi, k)
+        invariant HasMajority(a, lo, |a|, K)
+    {
+        if (a[hi] == k)
+        {
+            hi := hi + 1
+            c := c + 1
+        }   
+        elseif (hi + 1 - lo < 2 * c)
+        {
+            hi := hi + 1
+        }
+        else
+        {
+            hi := hi + 1
+            var lemma0: Unit := lemmaDistinctCounts(a, lo, hi, k, K)
+            var lemma1: Unit := lemmaSplitCount(a, lo, hi, |a|, K)
+            k := a[hi]
+            lo := hi
+            hi := hi + 1
+            c := 1
+        }
+    }
+    var lemma2: Unit := lemmaDistinctCounts(a, lo, |a|, k, K)
+}
+
+/**
+ * This method does the same thing as the FindWinner method, but it allows to
+ * be called with a sequence that does not have a majority element, which is
+ * indicated by the hasWinner parameter. In that case we cannot say anything
+ * useful about the returned value. 
+ * If we have a sequence without a majority winner, the invariants will not
+ * hold for the very last element. This is because we would have a sequence 
+ * from lo to hi - 1, where k is not the majority element. Dafny solves this
+ * case by just returning from the method and therefore exiting the loop and
+ * its checks prematurely. In Viper, we cannot do that and thus have to use a 
+ * different approach. Without declaring new variables or changing invariants,
+ * we can only fiddle with lo and hi. We can either decrement hi, which would
+ * satisfy the invariant, but would also make the loop run forever. Loop 
+ * termination is not checked by default and the method would thus verify 
+ * without a decreases clause. The other option is to set lo to hi - 1, meaning
+ * that we have a sequence of length 1, choosing the element inside it as 
+ * current candidate k and setting the count c to 1. This is not helping the 
+ * algorithm make progress, but it satisfies the invariants and does not 
+ * influence the outcome of the method.
+ */
+method SearchForWinner(a: Seq[Int], hasWinner: Bool, K: Int) returns (k: Int)
+    requires |a| != 0
+    requires hasWinner ==> HasMajority(a, 0, |a|, K)
+    ensures hasWinner ==> k == K
+{
+    k := a[0]
+    var lo: Int := 0
+    var hi: Int := 1
+    var c: Int := 1
+    while (hi < |a|)
+        invariant 0 <= lo <= hi <= |a|
+        invariant c == Count(a, lo, hi, k)
+        invariant HasMajority(a, lo, hi, k)
+        invariant hasWinner ==> HasMajority(a, lo, |a|, K)
+    {
+        if (a[hi] == k)
+        {
+            hi := hi + 1
+            c := c + 1
+        }   
+        elseif (hi + 1 - lo < 2 * c)
+        {
+            hi := hi + 1
+        }
+        else
+        {
+            hi := hi + 1
+            var lemma0: Unit := lemmaDistinctCounts(a, lo, hi, k, K)
+            var lemma1: Unit := lemmaSplitCount(a, lo, hi, |a|, K)
+            if (hi == |a|)
+            {
+                lo := hi - 1
+                c := 1
+                k := a[hi - 1]
+            }
+            else
+            {
+                k := a[hi]
+                lo := hi
+                hi := hi + 1
+                c := 1
+            }
+        }
+    }
+    var lemma2: Unit := lemmaDistinctCounts(a, lo, |a|, k, K)
+}
+
+/**
+ * This algebraic data type represents the result of the election. It either
+ * represent the fact that there is no winner, or that there is a winner, in 
+ * which case the candidate field contains the winner.
+ */
+adt Result {
+    NoWinner()
+    Winner(candidate: Int)
+}
+
+/**
+ * This method determines the winner of the election without any outside
+ * arguments apart from the sequence we look at. Contrary to Dafny, we could
+ * reuse hasWinner or even combine the two if branches into one, but to stay
+ * true to the separation between verification variables and program variables,
+ * we do not do that.
+ * Please note that the Dafny version of this method from the book has been 
+ * corrected to comply with modern Dafny rules, see the errata for more 
+ * information at:
+ * https://program-proofs.com/errata.html
+ */
+method DetermineElection(a: Seq[Int]) returns (res: Result)
+    ensures res.isWinner ==> HasMajority(a, 0, |a|, res.candidate)
+    ensures res.isNoWinner ==> !(exists c: Int :: HasMajority(a, 0, |a|, c))
+{
+    if (|a| == 0)
+    {
+        res := NoWinner()
+    }
+    else
+    {
+        var hasWinner: Bool := exists c: Int :: HasMajority(a, 0, |a|, c)
+        var winner: Int
+        if (hasWinner)
+        {
+            winner := SearchForWinner(a, true, assignSuchThatMajority(a))
+        }
+        else
+        {
+            winner := SearchForWinner(a, false, a[0])
+        }
+
+        if (HasMajority(a, 0, |a|, winner))
+        {
+            res := Winner(winner)
+        }
+        else
+        {
+            res := NoWinner()
+        }
+    }
+}

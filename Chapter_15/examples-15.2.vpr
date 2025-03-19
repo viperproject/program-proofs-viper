@@ -1,0 +1,114 @@
+import "examples-15.1.vpr"
+
+/**
+ * This method serves as the general entry point for the quicksort algorithm. 
+ * It then performs the initial call to the recursive QuicksortAux method.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one value.
+ */
+method Quicksort(a: Array[Int])
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures iarraySorted(a)
+    // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+{
+    QuicksortAux(a, 0, len(a))
+}
+
+/**
+ * This method recursively sorts sub-arrays in the quicksort algorithm. It 
+ * selects a pivot and partitions the sub-array into a less-than or 
+ * greater-or-equal to the pivot section, if the sub-array contains two or more
+ * elements. Then, it recursively sorts the sub-arrays on both sides of the 
+ * pivot.
+ */
+method QuicksortAux(a: Array[Int], lo: Int, hi: Int)
+    requires iarrayAccessFull(a)
+    requires 0 <= lo <= hi <= len(a)
+    requires SplitPoint(a, lo) && SplitPoint(a, hi)
+    ensures iarrayAccessFull(a)
+    ensures forall i: Int, j: Int :: lo <= i < j < hi ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+    ensures SwapFrame(a, lo, hi)
+    ensures SplitPoint(a, lo) && SplitPoint(a, hi)
+    decreases hi - lo
+{
+    if (2 <= hi - lo)
+    {
+        var p: Int := Partition(a, lo, hi)
+        QuicksortAux(a, lo, p)
+        QuicksortAux(a, p + 1, hi)
+    }
+}
+
+/**
+ * This macro ensures that all elements of the array a which lie outside lo and
+ * hi are unchanged by the method call.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out.
+ * In Dafny SwapFrame is a two-state predicate, which is a boolean function 
+ * that can read the old state and the new state of the heap before the 
+ * invocation of the predicate. Viper does not have such a construct and calls
+ * to old will be evaluated within the context of the current state. Therefore,
+ * the only way to define a two-state predicate in Viper is to define a macro,
+ * which is being inserted as-is into the code at the call site.
+ */
+define SwapFrame(a, lo, hi)
+    forall i: Int :: 0 <= i < lo || hi <= i < len(a) ==> iarrayLookup(a, i) == old(iarrayLookup(a, i)) 
+    /* && multiset(iarrayFull(a)) == old(multiset(iarrayFull(a))) */
+
+/**
+ * This method performs the partitioning step of the quicksort algorithm. It
+ * selects a pivot and partitions the sub-array into a less-than or
+ * greater-or-equal to the pivot section. The pivot gets placed between the two
+ * sections and the method returns its index.
+ * While the selection of the pivot is crucial in real-world applications to
+ * avoid worst-case behavior, it doesn't matter for the correctness of the
+ * algorithm. Therefore, we just select the first element of the sub-array as
+ * the pivot.
+ */
+method Partition(a: Array[Int], lo: Int, hi: Int) returns (p: Int)
+    requires 0 <= lo < hi <= len(a)
+    requires iarrayAccessFull(a)
+    requires SplitPoint(a, lo) && SplitPoint(a, hi)
+    ensures lo <= p < hi
+    ensures iarrayAccessFull(a)
+    ensures forall i: Int :: lo <= i < p ==> iarrayLookup(a, i) < iarrayLookup(a, p)
+    ensures forall i: Int :: p <= i < hi ==> iarrayLookup(a, p) <= iarrayLookup(a, i)
+    ensures SplitPoint(a, lo) && SplitPoint(a, hi)
+    ensures SwapFrame(a, lo, hi)
+    decreases hi - lo
+{
+    var pivot: Int := iarrayLookup(a, lo)
+    var m: Int := lo + 1
+    var n: Int := hi
+    while (m < n)
+        invariant lo + 1 <= m <= n <= hi
+        invariant iarrayAccessFull(a)
+        invariant iarrayLookup(a, lo) == pivot
+        invariant forall i: Int :: lo + 1 <= i < m ==> iarrayLookup(a, i) < pivot
+        invariant forall i: Int :: n <= i < hi ==> pivot <= iarrayLookup(a, i)
+        invariant SplitPoint(a, lo) && SplitPoint(a, hi)
+        invariant SwapFrame(a, lo, hi)
+        decreases n - m
+    {
+        if (iarrayLookup(a, m) < pivot)
+        {
+            m := m + 1
+        }
+        else
+        {
+            var tmpLoop: Int := iarrayLookup(a, m)
+            iarrayUpdate(a, m, iarrayLookup(a, n - 1))
+            iarrayUpdate(a, n - 1, tmpLoop)
+            n := n - 1
+        }
+    }
+    var tmp: Int := iarrayLookup(a, lo)
+    iarrayUpdate(a, lo, iarrayLookup(a, m - 1))
+    iarrayUpdate(a, m - 1, tmp)
+    p := m - 1
+}

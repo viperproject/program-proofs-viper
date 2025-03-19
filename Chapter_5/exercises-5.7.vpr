@@ -1,0 +1,55 @@
+import "../Chapter_4/examples-4.0.vpr"
+
+function ReverseColors(t: BYTree): BYTree
+{
+    t.isBlueLeaf ? YellowLeaf() : t.isYellowLeaf ? BlueLeaf() : Node(ReverseColors(t.left), ReverseColors(t.right))   
+}
+
+method ReverseReverse(t: BYTree)
+ensures ReverseColors(ReverseColors(t)) == t
+{
+    if(t.isBlueLeaf){
+        // trivial
+    } else {
+        ReverseReverse(t.left)
+        ReverseReverse(t.right)
+    }
+}
+
+function LeafCount(t: BYTree): Int
+{
+    t.isBlueLeaf || t.isYellowLeaf ? 1 : LeafCount(t.left) + LeafCount(t.right)
+}
+
+method LeafCountReverse(t: BYTree)
+ensures LeafCount(ReverseColors(t)) == LeafCount(t)
+{
+    if(t.isBlueLeaf || t.isYellowLeaf){
+        // trivial
+    } else {
+        LeafCountReverse(t.left)
+        LeafCountReverse(t.right)
+    }
+}
+
+function Oceanize(t: BYTree): BYTree
+{
+    t.isBlueLeaf ? BlueLeaf() : t.isYellowLeaf ? BlueLeaf() : Node(Oceanize(t.left), Oceanize(t.right))
+}
+
+function BlueCount(t: BYTree): Int
+{
+    t.isBlueLeaf ? 1 : t.isYellowLeaf ? 0 : BlueCount(t.left) + BlueCount(t.right)
+}
+
+method BlueCountOcean(t: BYTree)
+ensures BlueCount(t) <= BlueCount(Oceanize(t))
+{
+    if(t.isBlueLeaf || t.isYellowLeaf){
+        // trivial
+    } else {
+        BlueCountOcean(t.left)
+        BlueCountOcean(t.right)
+    }
+}
+

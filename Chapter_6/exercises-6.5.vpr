@@ -1,0 +1,50 @@
+//Exercise 6.13
+/**
+ * This exercise does not make sense in Viper, as it does not support
+ * generic functions.
+ * 
+ * For our examples we are using the specific type Int, so we do not have 
+ * to add a suffix (==) to the function Find, since we know that the type
+ * Int is comparable.
+ */
+
+
+//Exercise 6.14
+/**
+ * This exercise asked us to explain how the precondition of the function
+ * At is met in the lemmas AtFind and BeforeFind.
+ 
+ * AtFind:  Here the precondition of At is met, because we first have the
+ *          statement Find(xs, y) == length(xs) and if this is true, the
+ *          second statement of the Boolean Or would not be executed. This
+ *          ensures that At will only be called with a return value of
+ *          0 <= Find(xs, y) < length(xs), which meets the precondition.
+ * BeforeFind:  This lemma meets the precondition since we only call At
+ *              if i < Find(xs, y). Find(xs, y) can only be <= length(xs).
+ *              This ensures that i < length(xs) and since i has to be a
+ *              natural number ensured by the precondition of 
+ *              lemmaBeforeFind the precondition of At is met.
+ *
+ * The function At can be found in the file examples-6.4.vpr. The lemmas
+ * can be found in examples-6.5.vpr.
+ */
+
+//Exercise 6.15
+/**
+ * Automatic induction
+ */
+
+//Exercise 6.16
+/**
+ * Automatic induction 
+ */
+
+//Exercise 6.17
+/**
+ * Automatic induction
+ */
+
+//Exercise 6.18
+/**
+ * Automatic induction
+ */

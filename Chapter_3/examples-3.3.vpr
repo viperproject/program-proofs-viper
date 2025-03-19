@@ -1,0 +1,76 @@
+// Viper does not prove termination by default, so we have to explicitly specify that it this abstract method terminates.
+method RequiredStudyTime(c: Int) returns (hours: Int)
+  requires 0 <= c
+  ensures 0 <= hours
+  decreases _
+
+
+method Study(n: Int, h: Int)
+  requires 0 <= n && 0 <= h
+  decreases n, h
+{
+    if(h != 0) {
+        Study(n, h-1)
+    } elseif(n == 0) {
+
+    } else {
+        var hours: Int
+        hours := RequiredStudyTime(n-1)
+        Study(n-1, h)
+    }
+  
+}
+
+function Ack(m: Int, n: Int): Int
+  decreases m, n
+  requires 0 <= m && 0 <= n
+  ensures 0 <= result
+{
+  m == 0 ? n + 1 : 
+  (n == 0 ? Ack(m-1, 1) : Ack(m-1, Ack(m, n-1)))
+}
+
+method StudyPlan(n: Int)
+requires 0 <= n <= 40
+decreases 40 - n
+{
+    if(n == 40){
+
+    } else {
+        var hours: Int
+        hours := RequiredStudyTime(n)
+        Learn(n, hours)
+    }
+}
+
+method Learn(n: Int, h: Int)
+requires 0 <= n < 40 && 0 <= h
+decreases 40 - n, h
+{
+    if(h == 0){
+        StudyPlan(n + 1)
+    } else {
+        Learn(n, h - 1)
+    }
+}
+
+function ExpLess(n: Int): Int
+requires 0 <= n
+decreases n, 1
+{
+    n == 0 ? 0 : 2 * ExpLess(n - 1) + 1
+}
+
+function ExpLess1(n: Int): Int
+requires 0 <= n
+decreases n
+{
+    n == 0 ? 0 : ExpLess2(n) + 1
+}
+
+function ExpLess2(n: Int): Int
+requires 1 <= n
+decreases n, 0
+{
+    2 * ExpLess1(n - 1)
+}

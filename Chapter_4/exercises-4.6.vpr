@@ -1,0 +1,32 @@
+import "examples-4.6.vpr"
+
+// TODO Prove termination
+
+function GoodEnv(e: Expr, env: Map[Seq[Int], Int]): Bool
+//decreases e
+{
+    e.isConst ? true : e.isVar ? e.str in env : GoodEnvList(e.args, env)
+}
+
+function GoodEnvList(es: List[Expr], env: Map[Seq[Int], Int]): Bool
+//decreases es
+{
+    es.isNil ? true : GoodEnv(es.head, env) && GoodEnvList(es.tail, env)
+}
+
+
+function GoodEval(e: Expr, env: Map[Seq[Int], Int]): Int
+requires GoodEnv(e, env)
+//decreases e
+{
+    e.isConst ? e.val : e.isVar ? env[e.str] : GoodEvalList(e.args, e.op, env)
+}
+
+// To introduce variables in a (single expression) function body, we can use let expressions
+function GoodEvalList(args: List[Expr], op: Op, env: Map[Seq[Int], Int]): Int
+requires GoodEnvList(args, env)
+//decreases args
+{
+    args.isNil ? (op.isAdd ? 0 : 1) : 
+        let v0 == (GoodEval(args.head, env)) in let v1 == (GoodEvalList(args.tail, op, env)) in op.isAdd ? v0 + v1 : v0 * v1 
+}

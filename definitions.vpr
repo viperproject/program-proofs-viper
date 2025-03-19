@@ -1,0 +1,47 @@
+/**
+ * This file contains auxiliary definitions that are used in multiple locations
+ */
+
+
+/**
+ * The Unit data type has a single value, `unit()`. We use it as the return value of
+ * translated lemmas. Viper does not provide a special syntax for defining lemmas.
+ * As lemmas need to be callable in a pure context, we translate them to functions
+ * with `Unit` as the return type. We could also use an arbitrary type like bool as
+ * the return type. We chose this way to express the fact that the return value is
+ * not important.
+ */
+adt Unit {
+  unit()
+}
+
+
+/**
+ * Viper does not have built-in support for tuples (pairs, triples, ...), so we
+ * need to define a pair type via a custom domain.
+ */
+domain Pair[T, G] {
+
+    /**
+     * The constructor takes two elements and returns a pair containing both of them.
+     */
+    function pair(T, G): Pair[T, G]
+
+    /**
+     * The destructors allow access to the elements of a pair.
+     */
+    function getLeft(Pair[T, G]): T
+    function getRight(Pair[T, G]): G
+
+    /**
+     * These axioms define the behavior of the functions above: If we create a pair 
+     * and then access its elements, we get the original elements back.
+     */
+    axiom axGetLeft {
+        forall x: T, y: G :: getLeft(pair(x, y)) == x
+    }
+
+    axiom axGetRight {
+        forall x: T, y: G :: getRight(pair(x, y)) == y
+    }
+}

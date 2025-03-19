@@ -1,0 +1,91 @@
+import "../Chapter_4/examples-4.6.vpr"
+
+function Substitute(e: Expr, n: Seq[Int], c: Int): Expr
+requires 0 <= c
+{
+    e.isConst ? e : e.isVar ? (e.str == n ? Const(c) : e) : Node(e.op, SubstituteList(e.args, n, c)) 
+}
+
+function SubstituteList(es: List[Expr], n: Seq[Int], c: Int): List[Expr]
+requires 0 <= c
+{
+    es.isNil ? Nil() : Cons(Substitute(es.head, n, c), SubstituteList(es.tail, n, c))
+}
+
+method EvalSubstitute(e: Expr, n: Seq[Int], c: Int, env: Map[Seq[Int], Int])
+requires 0 <= c
+ensures Eval(Substitute(e, n, c), env) == Eval(e, env[n := c])
+{
+    if(e.isNode) {
+        EvalSubstituteList(e.args, e.op, n, c, env)
+    }
+}
+
+method EvalSubstituteList(args: List[Expr], op: Op, n: Seq[Int], c: Int, env: Map[Seq[Int], Int])
+requires 0 <= c
+ensures EvalList(SubstituteList(args, n, c), op, env) == EvalList(args, op, env[n := c])
+{
+    if(args.isCons) {
+        EvalSubstitute(args.head, n, c, env);
+        EvalSubstituteList(args.tail, op, n, c, env);
+    }
+}
+
+function Unit(op: Op): Int 
+{
+    op.isAdd ? 0 : 1
+}
+
+function Optimize(e: Expr): Expr
+{
+    e.isNode ? let args == (OptimizeAndFilter(e.args, Unit(e.op))) in Shorten(e.op, args) : e
+}
+
+function Shorten(op: Op, args: List[Expr]): Expr
+{
+    args.isNil ? Const(Unit(op)) : args.isCons && args.tail.isNil ? args.head : Node(op, args)
+}
+
+function OptimizeAndFilter(es: List[Expr], unit: Int): List[Expr]
+requires 0 <= unit
+{
+    es.isNil ? Nil() : 
+        let ep == (Optimize(es.head)) in
+        let tailp == (OptimizeAndFilter(es.tail, unit)) in
+        ep.isConst ? tailp : Cons(ep, tailp)
+}
+
+method OptimizeCorrect(e: Expr, env: Map[Seq[Int], Int])
+ensures Eval(Optimize(e), env) == Eval(e, env)
+{
+    if(e.isNode) {
+        OptimizeAndFilterCorrect(e.args, e.op, env)
+        ShortenCorrect(e.op, OptimizeAndFilter(e.args, Unit(e.op)), env)
+    }
+}
+
+
+method ShortenCorrect(op: Op, args: List[Expr], env: Map[Seq[Int], Int])
+ensures Eval(Shorten(op, args), env) == Eval(Node(op, args), env)
+{
+    if(args.isCons){
+        assert Eval(Node(op, Cons(args.head, Nil())), env) == EvalList(Cons(args.head, Nil()), op, env)
+        //assert EvalList(Cons(args.head, Nil()), op, env)
+        assume false
+    } else {
+        //assert Eval(Shorten(op, Nil()), env) == Unit(op)
+        assert EvalList(Nil(), op, env) == Unit(op)
+        //assert Eval(Node(op, Nil()), env) == Unit(op)
+        //assert Unit(op) == Eval(Node(op, Nil()), env)
+    }
+    
+}
+
+method OptimizeAndFilterCorrect(args: List[Expr], op: Op, env: Map[Seq[Int], Int])
+ensures Eval(Node(op, OptimizeAndFilter(args, Unit(op))), env) == Eval(Node(op, args), env)
+{
+    if(args.isCons){
+        OptimizeCorrect(args.head, env)
+        OptimizeAndFilterCorrect(args.tail, op, env)
+    } 
+}

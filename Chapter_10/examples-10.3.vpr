@@ -1,0 +1,280 @@
+import "../definitions.vpr"
+import "BraunTree.vpr"
+
+/**
+ * We redeclare certain functions already declared
+ * in examples-10.2.vpr to avoid name clashes with some of the
+ * new functions we will be declaring in this subchapter.
+ * 
+ * All the following functions are from the file examples-10.2.vpr.
+ */
+function IsEmpty(pq: PQueue): Bool
+    decreases
+{
+    pq == Leaf()
+}
+
+function Valid(pq: PQueue): Bool
+    decreases
+{
+    IsBinaryHeap(pq) && IsBalanced(pq)
+}
+
+function IsBinaryHeap(pq: PQueue): Bool
+    decreases pq
+{
+    pq.isLeaf ? true : (IsBinaryHeap(pq.left) && IsBinaryHeap(pq.right) &&
+                        (pq.left == Leaf() || pq.x <= pq.left.x) &&
+                        (pq.right == Leaf() || pq.x <= pq.right.x))
+}
+
+function IsBalanced(pq: PQueue): Bool
+    decreases pq
+{
+    pq.isLeaf ? true : (IsBalanced(pq.left) && IsBalanced(pq.right) && 
+                        let L == (|Elements(pq.left)|) in 
+                        let R == (|Elements(pq.right)|) in 
+                        L == R || L == R + 1)
+}
+
+function Elements(pq: PQueue): Multiset[Int]
+    decreases pq
+{
+    pq.isLeaf ? Multiset(): Multiset(pq.x) union Elements(pq.left) union Elements(pq.right)
+}
+
+function Empty(): PQueue
+   decreases
+{
+    Leaf()
+}
+
+
+function IsMin(y: Int, s: Multiset[Int]): Bool
+    decreases
+{
+    (y in s) > 0 && (forall x: Int :: (x in s) > 0 ==> y <= x)
+}
+
+function Insert(pq: PQueue, y: Int): PQueue
+    decreases pq
+{
+    pq.isLeaf  ? Node(y, Leaf(), Leaf()) : 
+    (y < pq.x) ? Node(y, Insert(pq.right, pq.x), pq.left) :
+                 Node(pq.x, Insert(pq.right, y), pq.left)
+}
+
+function lemmaInsertCorrect(pq: PQueue, y: Int): Unit
+    requires Valid(pq)
+    ensures let pq2 == (Insert(pq, y)) in
+            Valid(pq2) && Elements(pq2) == Elements(pq) union Multiset(y)
+    decreases pq
+{
+    let pq2 == (Insert(pq, y)) in
+    let L == (|Elements(pq.left)|) in 
+    let R == (|Elements(pq.right)|) in
+    pq.isLeaf  ? unit() : 
+    (y < pq.x) ?    let _0 == (lemmaInsertCorrect(pq.right, pq.x)) in
+                    asserting(Valid(Insert(pq.right, pq.x))) in
+                 unit() :
+                    let _0 == (lemmaInsertCorrect(pq.right, y)) in
+                    asserting(Valid(Insert(pq.right, y))) in
+                 unit()
+}
+
+function lemmaRemoveMinCorrect(pq: PQueue): Unit
+    requires Valid(pq) && !IsEmpty(pq)
+    ensures let y == (getLeft(RemoveMin(pq))) in 
+            let pq2 == (getRight(RemoveMin(pq))) in
+            Valid(pq2) && 
+            IsMin(y, Elements(pq)) &&
+            Elements(pq2) union Multiset(y) == Elements(pq)
+    decreases pq
+{
+    let y == (getLeft(RemoveMin(pq))) in
+    let pq2 == (getRight(RemoveMin(pq))) in
+    pq.isLeaf ? unit() : 
+                    let _0 == (lemmaDeleteMinCorrect(pq)) in
+                    let L == (pq.left.isLeaf ? pq.x : getLeft(RemoveMin(pq.left))) in 
+                    let R == (pq.right.isLeaf ? pq.x : getLeft(RemoveMin(pq.right))) in
+                    let _1 == (pq.left == Leaf() ? unit() : lemmaRemoveMinCorrect(pq.left)) in
+                    let _2 == (pq.right == Leaf() ? unit() : lemmaRemoveMinCorrect(pq.right)) in
+                    let _3 == (pq.left == Leaf() ? unit() : asserting(IsMin(L, Elements(pq.left))) in unit()) in 
+                    let _4 == (pq.right == Leaf() ? unit() : asserting(IsMin(R, Elements(pq.right))) in unit()) in
+                unit()               
+}
+
+function lemmaDeleteMinCorrect(pq: PQueue): Unit
+    requires Valid(pq) && pq != Leaf()
+    ensures let pq2 == (DeleteMin(pq)) in 
+            Valid(pq2) &&
+            Elements(pq2) union Multiset(pq.x) == Elements(pq)
+    decreases pq
+{
+    (pq.left == Leaf() || pq.right == Leaf()) ? unit() :
+    (pq.left.x <= pq.right.x)                 ?     let _0 == (lemmaDeleteMinCorrect(pq.left)) in
+                                                    asserting(Valid(DeleteMin(pq.left))) in
+                                                unit() :
+                                                    let left == (ReplaceRoot(pq.right, pq.left.x)) in
+                                                    let right == (DeleteMin(pq.left)) in
+                                                    let pq2 == (Node(pq.right.x, left, right)) in
+                                                    let _0 == (lemmaDeleteMinCorrect(pq.left)) in
+                                                    asserting(Valid(DeleteMin(pq.left))) in
+                                                    let _2 == (lemmaReplaceRootCorrect(pq.right, pq.left.x)) in
+                                                    asserting(Elements(pq.right) union Multiset(pq.left.x) union Elements(right) union 
+                                                        Multiset(pq.x) == Elements(right) union Multiset(pq.left.x) union 
+                                                        Elements(pq.right) union Multiset(pq.x)) in
+                                                    asserting(Elements(pq.left) union Elements(pq.right) union 
+                                                        Multiset(pq.x) == Multiset(pq.x) union Elements(pq.left) union Elements(pq.right)) in
+                                                    let _5 == (lemmaReplaceRootCorrect(pq.right, pq.left.x)) in
+                                                unit()
+}
+
+function lemmaReplaceRootCorrect(pq: PQueue, y: Int): Unit
+    requires Valid(pq) && !IsEmpty(pq)
+    ensures let pq2 == (ReplaceRoot(pq, y)) in
+            Valid(pq2) &&
+            Elements(pq) union Multiset(y) == Elements(pq2) union Multiset(pq.x) &&
+            |Elements(pq2)| == |Elements(pq)|
+    decreases pq
+{
+    (pq.left == Leaf() || (y <= pq.left.x && (pq.right == Leaf() || y <= pq.right.x))) ? unit() : 
+    (pq.right == Leaf())                                                               ?    let left == (Node(y, Leaf(), Leaf())) in
+                                                                                            let right == (Leaf()) in
+                                                                                            let pq2 == (ReplaceRoot(pq, y)) in
+                                                                                            asserting(IsBalanced(left) && IsBalanced(right)) in
+                                                                                            asserting(IsBalanced(pq2)) in
+                                                                                            asserting(IsBinaryHeap(left) && IsBinaryHeap(right)) in
+                                                                                         unit() :
+    (pq.left.x <= pq.right.x)                                                          ?    let left == (ReplaceRoot(pq.left, y)) in
+                                                                                            let pq2 == (Node(pq.left.x, left, pq.right)) in
+                                                                                            let _0 == (lemmaReplaceRootCorrect(pq.left, y)) in
+                                                                                            asserting(Valid(left)) in
+                                                                                            asserting((Elements(pq2) == Elements(pq.left) union 
+                                                                                                Multiset(y) union Elements(pq2.right))) in
+                                                                                         unit() :
+                                                                                            let right == (ReplaceRoot(pq.right, y)) in
+                                                                                            let pq2 == (Node(pq.right.x, pq.left, ReplaceRoot(pq.right, y))) in
+                                                                                            let _0 == (lemmaReplaceRootCorrect(pq.right, y)) in
+                                                                                            asserting(Valid(right)) in
+                                                                                            asserting(Elements(pq2) == Elements(pq.right) union 
+                                                                                                Multiset(y) union Elements(pq2.left)) in
+                                                                                         unit()
+}
+
+
+function ReplaceRoot(pq: PQueue, y: Int): PQueue
+    requires !IsEmpty(pq)
+    decreases pq
+{
+    (pq.left == Leaf() || (y <= pq.left.x && (pq.right == Leaf() || y <= pq.right.x))) ? Node(y, pq.left, pq.right) :
+    (pq.right == Leaf())                                                               ? Node(pq.left.x, Node(y, Leaf(), Leaf()), Leaf()) :
+    (pq.left.x <= pq.right.x)                                                          ? Node(pq.left.x, ReplaceRoot(pq.left, y), pq.right) :
+                                                                                         Node(pq.right.x, pq.left, ReplaceRoot(pq.right, y))
+}
+
+/**
+ * Now there will be new definitions. The following 
+ * definitions were not declared in examples-10.2.vpr.
+ */
+
+/**
+ * This is another more efficient definition of a Delete function.
+ * Here we assume that the tree is Balanced compared to the last
+ * DeleteMin Method.
+ */
+function DeleteMin(pq: PQueue): PQueue
+    requires IsBalanced(pq) && !IsEmpty(pq)
+    decreases pq
+{
+    (pq.right == Leaf())      ? pq.left : 
+    (pq.left.x <= pq.right.x) ? Node(pq.left.x, pq.right, DeleteMin(pq.left)) : 
+                                Node(pq.right.x, ReplaceRoot(pq.right, pq.left.x), DeleteMin(pq.left))
+}
+
+/**
+ * In order for RemoveMin to work, we need to modify the 
+ * function RemoveMin as well. Here we simply add the 
+ * pre-condition Valid(pq). This solves our problem.
+ */
+function RemoveMin(pq: PQueue): Pair[Int, PQueue]
+    requires !IsEmpty(pq) && Valid(pq)
+    /**
+     * In the book, they also add postconditions to ensure the function behaviour.
+     * These make lemmaRemoveCorrect unnecessary. The proof is almost identical 
+     * to the proof of lemmaRemoveCorrect, so we omit it here.
+     *
+     * ensures let y == (getLeft(result)) in
+     *         let pq2 == (getRight(result)) in
+     *         Valid(pq2) && IsMin(y, Elements(pq)) &&
+     *         Elements(pq2) union Multiset(y) == Elements(pq)
+     */
+    decreases pq
+{
+    pair(pq.x, DeleteMin(pq))
+}
+
+/**
+ * Now we will create the intrinsic versions of the 
+ * functions. We will include the non-trivial postconditions
+ * in the function itself, rather than using extra lemmas. This 
+ * change can be seen in the functions InsertIntrinsic and
+ * RemoveMinIntrinsic.
+ */
+function ValidIntrinsic(pq: PQueue): Bool
+    decreases
+{
+    Valid(pq)
+}
+
+function ElementsIntrinsic(pq: PQueue): Multiset[Int]
+    decreases
+{
+    Elements(pq)
+}
+
+function IsMinIntrinsic(m: Int, s: Multiset[Int]): Bool
+    decreases
+{
+    IsMin(m, s)
+}
+
+function EmptyIntrinsic(): PQueue
+    ensures Valid(Empty()) &&
+            Elements(Empty()) == Multiset()
+    decreases
+{
+    Empty()
+}
+
+function IsEmptyIntrinsic(pq: PQueue): Bool
+    requires Valid(pq)
+    ensures IsEmpty(pq) <==> Elements(pq) == Multiset()
+    decreases
+{
+    IsEmpty(pq)
+}
+
+function InsertIntrinsic(pq: PQueue, y: Int): PQueue
+    requires Valid(pq)
+    ensures let pq2 == (Insert(pq, y)) in
+            Valid(pq2) &&
+            Elements(pq2) == Multiset(y) union Elements(pq)
+    decreases
+{
+    let a == (lemmaInsertCorrect(pq, y)) in
+    Insert(pq, y)
+}
+
+function RemoveMinIntrinsic(pq: PQueue): Pair[Int, PQueue]
+    requires Valid(pq) && !IsEmpty(pq)
+    ensures let y == (getLeft(RemoveMin(pq))) in
+            let pq2 == (getRight(RemoveMin(pq))) in
+            Valid(pq2) &&
+            IsMin(y, Elements(pq)) &&
+            Elements(pq2) union Multiset(y) == Elements(pq)
+    decreases
+{
+    let a == (lemmaRemoveMinCorrect(pq)) in
+    RemoveMin(pq)
+}

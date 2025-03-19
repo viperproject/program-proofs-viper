@@ -1,0 +1,71 @@
+/**
+ * In this subsection, we will now start to implement
+ * the loop bodies.
+ */
+method Loops1110()
+{
+    var x: Int
+    var y: Int
+
+    x := 0
+    y := 191
+    while(7 <= y)
+        invariant 0 <= y && 7 * x + y == 191
+    {
+        y := y - 7
+        x := x + 1
+    }
+    assert x == 191 / 7 && y == 191 % 7
+
+    x := 0
+    y := 191
+    /**
+     * Here we skip directly to the end result.
+     */
+    while(7 <= y)
+        invariant 0 <= y && 7 * x + y == 191
+    {
+        y := 2
+        x := 27
+    }
+    assert x == 191 / 7 && y == 191 % 7
+}
+
+method Loops1112()
+{
+    var n: Int
+    var s: Int
+    n := 0
+    s := 0
+    while(n != 33)
+        invariant s == n * (n - 1) / 2
+    {
+        s := s + n
+        n := n + 1
+    }
+}
+
+method LoopFrameExample(X: Int, Y: Int)
+    requires 0 <= X && X <= Y
+{
+    var i: Int
+    var a: Int
+    var b: Int
+    i := 0
+    a := X
+    b := Y
+    while(i < 100)
+        invariant Y <= b 
+        invariant b == Y + i*X 
+    {
+        i := i + 1
+        b := b + X
+    }
+    assert a == X
+    /**
+     * This assert statement is not provable without
+     * a loop invariant. If we removed it, the 
+     * assert would fail.
+     */
+    assert Y <= b
+}

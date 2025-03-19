@@ -1,0 +1,41 @@
+method SquareRoot(N: Int) returns (r: Int)
+    /**
+     * In the book, both N and r are declared as natural numbers.
+     * Since Viper does not support natural we add preconditions.
+     */
+    requires 0 <= N 
+    ensures 0 <= r 
+    ensures r * r <= N && N < (r + 1) * (r + 1)
+    decreases
+{
+    r := 0
+    while((r + 1) * (r + 1) <= N)
+        invariant r * r <= N
+        decreases N - r
+    {
+        r := r + 1
+    }
+}
+
+/**
+ * We try to keep track of the value (r + 1) * (r + 1) and
+ * calculate it more simply to improve the performance of the 
+ * method.
+ */
+method MoreEfficientSquareRoot(N: Int) returns (r: Int)
+    requires 0 <= N 
+    ensures 0 <= r 
+    ensures r * r <= N && N < (r + 1) * (r + 1)
+    decreases
+{
+    r := 0
+    var s: Int := 1
+    while(s <= N)
+        invariant r * r <= N
+        invariant s == (r + 1) * (r + 1)
+        decreases N -r
+    {
+        s := s + 2 * r + 3
+        r := r + 1
+    }
+}

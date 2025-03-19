@@ -1,0 +1,14 @@
+// Well-founded orders are defined mostly the same in Viper as in Dafny
+
+function M(x: Int, b: Bool): Int 
+  decreases !b
+{
+  b ? x : M(x+25, true)
+}
+
+function N(x: Int, y: Int, b: Bool): Int 
+  decreases 5*x + y + (b ? 4 : 0)
+{
+  (x <= 0 || y <= 0) ? x + y :
+  (b ? N(x, y+3, !b) : N(x-1, y, true))
+}

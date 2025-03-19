@@ -1,0 +1,68 @@
+import "../definitions.vpr"
+
+/**
+ * In this chapter, we define the Abstract Data Type 'Unary', which
+ * models the natural numbers.
+ */
+adt Unary {
+    /**
+     * Zero() is defined as the lowest element of the Unary data type.
+     */
+    Zero()
+
+    /**
+     * The unary Suc represents the successor of a unary pred.
+     */
+    Suc(pred: Unary)
+}
+
+/**
+ * This function maps a value of type `Unary` to a non-negative `Int`.
+ * A Unary cannot represent a negative number.
+ */
+function UnaryToNat(x: Unary): Int
+    ensures result >= 0 
+    decreases x
+{
+    x.isZero ? 0 : 1 + UnaryToNat(x.pred)
+}
+
+/**
+ * This function creates an injective function between the non-negative 
+ * Int type of Viper and our Unary data type. Together the two functions
+ * UnaryToNat and NatToUnary form a bijection between Unary and positive 
+ * integers.
+ */
+function NatToUnary(n: Int): Unary 
+    /**
+     * Since we can only model positive numbers with our Unary data
+     * type, we have to make sure that the Int we get as a parameter
+     * to the function will be greater or equal to zero.
+     */
+    requires n >= 0 
+    decreases n
+{
+    (n==0) ? Zero() : Suc(NatToUnary(n-1))
+}
+
+/**
+ * This lemma proves that the two functions are indeed a bijection.
+ */
+function lemmaNatUnaryCorrespondence(n: Int, x: Unary): Unit
+    /**
+     * Here we need n to be a natural number since we have only positive 
+     * Ints have an equivalent in Unary.
+     */
+    requires n >= 0
+    ensures UnaryToNat(NatToUnary(n)) == n
+    ensures NatToUnary(UnaryToNat(x)) == x
+    decreases x, n
+{
+    (x.isZero && n==0) ? unit() 
+        : 
+        (x.isZero && n!=0) ? lemmaNatUnaryCorrespondence(n-1,x) 
+            : 
+            (x.isSuc && n==0) ? lemmaNatUnaryCorrespondence(n, x.pred) 
+                : 
+                lemmaNatUnaryCorrespondence(n-1, x.pred)
+}

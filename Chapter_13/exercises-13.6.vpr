@@ -1,0 +1,118 @@
+import "examples-13.6.vpr"
+
+//Exercise 13.14
+/**
+ * We are asked to modify the case distinction of the canyon search algorithm 
+ * from 13.6 to terminate early if the distance between the current pair of 
+ * elements is 0.
+ * To achieve this without introducing a new variable, we set n and m to the 
+ * length of the arrays, which will terminate the loop. Doing nothing in the
+ * else case would also verify because Viper does not check loop termination by
+ * default, but it would not be a correct implementation.
+ */
+method CanyonSearchImproved(a: Array[Int], b: Array[Int]) returns (d: Int)
+    requires iarrayAccessRead(a) && iarrayAccessRead(b)
+    requires len(a) != 0 && len(b) != 0
+    requires iarraySorted(a) && iarraySorted(b)
+    ensures iarrayAccessRead(a) && iarrayAccessRead(b)
+    ensures iarrayUntouched(a) && iarrayUntouched(b)
+    ensures 0 <= d
+    ensures exists i: Int, j: Int :: 
+        0 <= i < len(a) && 0 <= j < len(b) && d == Dist(iarrayLookup(a, i), iarrayLookup(b, j))
+    ensures forall i: Int, j: Int :: 0 <= i < len(a) && 0 <= j < len(b) ==> 
+        d <= Dist(iarrayLookup(a, i), iarrayLookup(b, j))
+{
+    d := Dist(iarrayLookup(a, 0), iarrayLookup(b, 0))
+    var m: Int := 0
+    var n: Int := 0
+    while (m < len(a) && n < len(b))
+        invariant iarrayAccessRead(a) && iarrayAccessRead(b)
+        invariant iarrayUntouched(a) && iarrayUntouched(b)
+        invariant 0 <= m <= len(a) && 0 <= n <= len(b)
+        invariant exists i: Int, j: Int :: 0 <= i < len(a) && 0 <= j < len(b) && 
+            d == Dist(iarrayLookup(a, i), iarrayLookup(b, j))
+        invariant forall i: Int, j: Int :: 0 <= i < len(a) && 0 <= j < len(b) ==> 
+            d <= Dist(iarrayLookup(a, i), iarrayLookup(b, j)) || (m <= i && n <= j)
+        {
+            d := Dist(iarrayLookup(a, m), iarrayLookup(b, n)) < d ? Dist(iarrayLookup(a, m), iarrayLookup(b, n)) : d
+            if (iarrayLookup(a, m) < iarrayLookup(b, n))
+            {
+                m := m + 1
+            }
+            elseif (iarrayLookup(b, n) < iarrayLookup(a, m))
+            {
+                n := n + 1
+            }
+            else
+            {
+                m := len(a)
+                n := len(b)
+            }
+        }
+}
+
+//Exercise 13.15
+/**
+ * We are asked to find the smallest additive distance of the pairwise 
+ * distances between three arrays. Or in other words, if x, y, and z are 
+ * elements of the arrays a, b, and c respectively, we want to find the
+ * smallest value of Dist(x, y) + Dist(y, z) + Dist(z, x).
+ * We use the same approach as in the original canyon search algorithm. We
+ * simply increment the index of the smallest element with each iteration and
+ * are thus guaranteed to step over the minimum at some point. We also stop
+ * early, if we find the minimum to be 0, as the sum will not get any smaller
+ * (just like in exercise 13.14).
+ */
+method CanyonSearchThreeArrays(a: Array[Int], b: Array[Int], c: Array[Int]) returns (d: Int)
+    requires iarrayAccessRead(a) && iarrayAccessRead(b) && iarrayAccessRead(c)
+    requires len(a) != 0 && len(b) != 0 && len(c) != 0
+    requires iarraySorted(a) && iarraySorted(b) && iarraySorted(c)
+    ensures iarrayAccessRead(a) && iarrayAccessRead(b) && iarrayAccessRead(c)
+    ensures iarrayUntouched(a) && iarrayUntouched(b) && iarrayUntouched(c)
+    ensures 0 <= d
+    ensures exists x: Int, y: Int, z: Int :: 0 <= x < len(a) && 0 <= y < len(b) && 0 <= z < len(c) && 
+            d == Dist(iarrayLookup(a, x), iarrayLookup(b, y)) + Dist(iarrayLookup(b, y), iarrayLookup(c, z)) + 
+                 Dist(iarrayLookup(c, z), iarrayLookup(a, x))
+    ensures forall x: Int, y: Int, z: Int :: 0 <= x < len(a) && 0 <= y < len(b) && 0 <= z < len(c) ==>
+            d <= Dist(iarrayLookup(a, x), iarrayLookup(b, y)) + Dist(iarrayLookup(b, y), iarrayLookup(c, z)) + 
+                 Dist(iarrayLookup(c, z), iarrayLookup(a, x))
+{
+    d := Dist(iarrayLookup(a, 0), iarrayLookup(b, 0)) + Dist(iarrayLookup(b, 0), iarrayLookup(c, 0)) + 
+         Dist(iarrayLookup(c, 0), iarrayLookup(a, 0))
+    var m: Int := 0
+    var n: Int := 0
+    var o: Int := 0
+    while (m < len(a) && n < len(b) && o < len(c))
+        invariant iarrayAccessRead(a) && iarrayAccessRead(b) && iarrayAccessRead(c)
+        invariant iarrayUntouched(a) && iarrayUntouched(b) && iarrayUntouched(c)
+        invariant 0 <= m <= len(a) && 0 <= n <= len(b) && 0 <= o <= len(c)
+        invariant exists x: Int, y: Int, z: Int :: 0 <= x < len(a) && 0 <= y < len(b) && 0 <= z < len(c) && 
+            d == Dist(iarrayLookup(a, x), iarrayLookup(b, y)) + Dist(iarrayLookup(b, y), iarrayLookup(c, z)) + 
+                 Dist(iarrayLookup(c, z), iarrayLookup(a, x))
+        invariant forall x: Int, y: Int, z: Int :: 0 <= x < len(a) && 0 <= y < len(b) && 0 <= z < len(c) ==>
+            d <= Dist(iarrayLookup(a, x), iarrayLookup(b, y)) + Dist(iarrayLookup(b, y), iarrayLookup(c, z)) + 
+                 Dist(iarrayLookup(c, z), iarrayLookup(a, x)) || (m <= x && n <= y && o <= z)
+        {
+            var dNew: Int := Dist(iarrayLookup(a, m), iarrayLookup(b, n)) + Dist(iarrayLookup(b, n), iarrayLookup(c, o)) + 
+                             Dist(iarrayLookup(c, o), iarrayLookup(a, m))
+            d := dNew < d ? dNew : d
+            if (iarrayLookup(a, m) == iarrayLookup(b, n) && iarrayLookup(b, n) == iarrayLookup(c, o))
+            {
+                m := len(a)
+                n := len(b)
+                o := len(c)
+            }
+            elseif (iarrayLookup(a, m) <= iarrayLookup(b, n) && iarrayLookup(a, m) <= iarrayLookup(c, o))
+            {
+                m := m + 1
+            }
+            elseif (iarrayLookup(b, n) <= iarrayLookup(a, m) && iarrayLookup(b, n) <= iarrayLookup(c, o))
+            {
+                n := n + 1
+            }
+            else
+            {
+                o := o + 1
+            }
+        }
+}

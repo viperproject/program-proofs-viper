@@ -1,0 +1,28 @@
+function Mult(x: Int, y: Int): Int 
+  decreases y
+  requires 0 <= x && 0 <= y
+  ensures  0 <= result
+{
+  y == 0 ? 0 : x + Mult(x, y-1)
+}
+
+
+/* lemma */
+method MultCommutative(x: Int, y: Int)
+  decreases x, y
+  requires 0 <= x && 0 <= y
+  ensures Mult(x, y) == Mult(y, x)
+{
+    if(x == y) {
+        // trivial
+    } elseif(x == 0) {
+        MultCommutative(x, y-1)
+    } elseif(y < x) {
+        MultCommutative(y, x) 
+    } else {
+        MultCommutative(x, y-1) 
+        MultCommutative(x-1, y-1) 
+        MultCommutative(x-1, y) 
+    }
+}
+  

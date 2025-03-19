@@ -1,0 +1,81 @@
+/**
+ * Compared to other chapters, we will not be importing the
+ * previous subchapter 10.0. This is because otherwise we
+ * will create name clashes of the functions that we will
+ * improve in this chapter and already defined in the
+ * previous chapter.
+ *
+ * Therefore we also have to import a few files again.
+ */
+
+import "../definitions.vpr"
+import "BraunTree.vpr"
+
+/**
+ * The BraunTree ADT is defined in the file BraunTree.vpr
+ */
+
+/**
+ * To each of the functions defined in chapter 10.0, we add valid(pq)
+ * to the definition of the lemmas. Valid is a boolean function that 
+ * will be defined further in the next subchapter.
+ *
+ * Valid is the invariant of the data structure and must hold at all 
+ * times.
+ */
+function Valid(pq: PQueue): Bool
+    decreases
+
+function Empty(): PQueue
+    decreases
+
+function IsEmpty(pq: PQueue): Bool
+    decreases
+ 
+function Insert(pq: PQueue, y: Int): PQueue
+    decreases pq
+
+function RemoveMin(pq: PQueue): Pair[Int, PQueue]
+    requires !IsEmpty(pq)
+    decreases
+
+function Elements(pq: PQueue): Multiset[Int]
+    decreases
+
+function lemmaEmptyCorrect(): Unit
+    ensures Elements(Empty()) == Multiset()
+    ensures Valid(Empty())
+    decreases
+ 
+function lemmaIsEmptyCorrect(pq: PQueue): Unit
+    requires Valid(pq)
+    ensures IsEmpty(pq) <==> Elements(pq) == Multiset()
+    decreases
+
+function lemmaInsertCorrect(pq: PQueue, y: Int): Unit
+    requires Valid(pq)
+    ensures Valid(Insert(pq, y))
+    ensures Elements(Insert(pq, y)) == Elements(pq) union Multiset(y)
+    decreases
+
+function lemmaRemoveMinCorrect(pq: PQueue): Unit
+    requires !IsEmpty(pq) && Valid(pq)
+    ensures let a == (getLeft(RemoveMin(pq))) in 
+           let b == (getRight(RemoveMin(pq))) in
+           Valid(b) &&
+           IsMin(a, Elements(pq)) && 
+           Elements(b) union Multiset(a) == Elements(pq)
+    decreases 
+
+
+function IsMin(y: Int, s: Multiset[Int]): Bool
+    decreases
+{
+    /**
+     * Here we are using a universal quantifier to check whether
+     * all elements in s are smaller than y. The function
+     * "in" on multisets returns the cardinality of the element
+     * in the multiset. 
+     */
+    (y in s) > 0 && (forall x: Int :: (x in s) > 0 ==> y <= x)
+}

@@ -1,0 +1,313 @@
+
+field hasBeans: Bool
+
+/**
+ * This predicate defines a grinder, which has a boolean field hasBeans that
+ * tracks whether the grinder has coffee beans in it to be ground into coffee
+ * powder.
+ */
+predicate Grinder(this: Ref)
+{
+    acc(this.hasBeans)
+}
+
+/**
+ * This function returns the value of the hasBeans field of a given grinder.
+ */
+function getHasBeans(this: Ref): Bool
+    requires Grinder(this)
+{
+    unfolding Grinder(this) in
+    this.hasBeans
+}
+
+/**
+ * This method initializes a Grinder predicate with no beans in it.
+ * The value of the hasBeans field has to be mentioned in a postcondition, 
+ * so that the verifier can infer that the grinder does not have beans in it,
+ * when the implementation is used.
+ */
+method GrinderConstructor() returns (this: Ref)
+    ensures Grinder(this)
+    ensures !getHasBeans(this)
+{
+    this := new(hasBeans)
+    this.hasBeans := false
+    fold Grinder(this)
+}
+
+/**
+ * This method adds beans to a given grinder and therefore sets its hasBeans
+ * field to true.
+ * This method remains abstract to align with the book's approach.
+ */
+method GrinderAddBeans(this: Ref)
+    requires Grinder(this)
+    ensures Grinder(this)
+    ensures getHasBeans(this)
+
+/**
+ * This method grinds the beans in a given grinder to coffee powder and 
+ * therefore requires beans in the grinder which are afterwards spent. 
+ * Therefore, the hasBeans field of the grinder is set from true to false.
+ * This method remains abstract to align with the book's approach.
+ */
+method GrinderGrind(this: Ref)
+    requires Grinder(this)
+    requires getHasBeans(this)
+    ensures Grinder(this)
+    ensures !getHasBeans(this)
+
+field Level: Int
+
+/**
+ * This predicate defines a water tank, which has an integer field Level that
+ * tracks the amount of portions of water for coffee that are left in the tank.
+ * In the Dafny implementation, the Level field is of type nat, which is an 
+ * integer that is greater or equal to zero.
+ */
+predicate WaterTank(this: Ref)
+{
+    acc(this.Level) && 0 <= this.Level
+}
+
+/**
+ * This function returns the value of the Level field of a given water tank.
+ * The postcondition ensures that the validity condition of the WaterTank
+ * predicate is included in the callers context
+ */
+function getLevel(this: Ref): Int
+    requires WaterTank(this)
+    ensures 0 <= result
+{
+    unfolding WaterTank(this) in
+    this.Level
+}
+
+/**
+ * This method initializes a WaterTank predicate with no water in it.
+ * The value of the Level field has to be mentioned in a postcondition, so that
+ * the verifier can infer that the water tank is empty,
+ * when the implementation is used.
+ */
+method WaterTankConstructor() returns (this: Ref)
+    ensures WaterTank(this)
+    ensures getLevel(this) == 0
+{
+    this := new(Level)
+    this.Level := 0
+    fold WaterTank(this)
+}
+
+/**
+ * This method fills a given water tank with water, which means that the Level
+ * field of the water tank is set to 10.
+ * This method remains abstract to align with the book's approach.
+ */
+method WaterTankFill(this: Ref)
+    requires WaterTank(this)
+    ensures WaterTank(this)
+    ensures getLevel(this) == 10
+
+/**
+ * This method uses a portion of water from a given water tank, which means
+ * that the Level field of the water tank is decremented by 1 and that the
+ * water tank has to be not empty upon invocation of the method.
+ * This method remains abstract to align with the book's approach
+ */
+method WaterTankUse(this: Ref)
+    requires WaterTank(this)
+    requires getLevel(this) != 0
+    ensures WaterTank(this)
+    ensures getLevel(this) == old(getLevel(this)) - 1
+
+/**
+ * This predicate defines a cup, which does nothing. In the book, the Dafny 
+ * version only has a constructor and no other methods or fields. In the Viper
+ * implementation, we leave the Cup predicate abstract.
+ */
+predicate Cup(this: Ref)
+
+/**
+ * This method initializes a Cup predicate. We leave method abstract as well.
+ */
+method CupConstructor() returns (this: Ref)
+    ensures Cup(this)
+
+
+field CMGrinder: Ref
+field CMWaterTank: Ref
+
+/**
+ * This predicate defines a coffee maker, which consists of a grinder and a
+ * water tank. The grinder and the water tank are references to references 
+ * which verify the Grinder and WaterTank predicates, respectively.
+ * In the book, the author maintains so-called representation sets for the 
+ * classes, because Dafny has to mention every class, meaning the class which
+ * is currently used plus its constituent classes which might be used by the
+ * current class, in a modifies or reads clause. In Viper, we can rely upon
+ * the recursive unfolding and folding mechanism of predicates to avoid having
+ * to maintain a potentially unbounded set of objects. When we define the 
+ * CoffeeMaker predicate with references to other predicates, we just have to
+ * specify access to their predicates. When we need to modify the fields of
+ * constituent objects, we only need to specify access to the main predicate,
+ * which is CoffeeMaker in this case, and we gain access to the constituent
+ * objects, which would be Grinder and WaterTank in this case, by unfolding the
+ * main predicate.
+ */
+predicate CoffeeMaker(this: Ref)
+{
+    acc(this.CMGrinder) && Grinder(this.CMGrinder) &&
+    acc(this.CMWaterTank) && WaterTank(this.CMWaterTank)
+}
+
+/**
+ * This function returns the grinder of a given coffee maker.
+ */
+function getCoffeeMakerGrinder(this: Ref): Ref
+    requires CoffeeMaker(this)
+{
+    unfolding CoffeeMaker(this) in
+    this.CMGrinder
+}
+
+/**
+ * This function returns the water tank of a given coffee maker.
+ */
+function getCoffeeMakerWaterTank(this: Ref): Ref
+    requires CoffeeMaker(this)
+{
+    unfolding CoffeeMaker(this) in
+    this.CMWaterTank
+}
+
+/**
+ * This method initializes a CoffeeMaker predicate with a new grinder and a new
+ * water tank. The grinder and the water tank are initialized with their
+ * respective constructors. The postconditions ensure that the CoffeeMaker
+ * predicate is valid and that the postconditions of the Grinder and WaterTank
+ * constructors are included in the callers context. This allows the verifier
+ * to reason about the concrete values of the grinder and water tank fields.
+ */
+method CoffeeMakerConstructor() returns (this: Ref)
+    ensures CoffeeMaker(this)
+    ensures unfolding CoffeeMaker(this) in !getHasBeans(this.CMGrinder)
+    ensures unfolding CoffeeMaker(this) in getLevel(this.CMWaterTank) == 0
+{
+    this := new(CMGrinder, CMWaterTank)
+    this.CMGrinder := GrinderConstructor()
+    this.CMWaterTank := WaterTankConstructor()
+    fold CoffeeMaker(this)
+}
+
+/**
+ * This function checks whether a given coffee maker is ready to dispense 
+ * coffee for both single and double coffee.
+ */
+function CoffeeMakerReady(this: Ref): Bool
+    requires CoffeeMaker(this)
+{
+    unfolding CoffeeMaker(this) in
+    getHasBeans(this.CMGrinder) && 2 <= getLevel(this.CMWaterTank)
+}
+
+/**
+ * This method restocks a given coffee maker with beans and water.
+ * It ensures that the coffee maker is ready to dispense coffee afterwards.
+ * We include the concrete values of the grinder and water tank fields after
+ * the restock operation in the postconditions, so that the verifier can reason
+ * about the concrete values of the grinder and water tank fields.
+ */
+method CoffeeMakerRestock(this: Ref)
+    requires CoffeeMaker(this)
+    ensures CoffeeMaker(this)
+    ensures CoffeeMakerReady(this)
+    ensures unfolding CoffeeMaker(this) in getHasBeans(this.CMGrinder)
+    ensures unfolding CoffeeMaker(this) in getLevel(this.CMWaterTank) == 10
+{
+    unfold CoffeeMaker(this)
+    GrinderAddBeans(this.CMGrinder)
+    WaterTankFill(this.CMWaterTank)
+    fold CoffeeMaker(this)
+}
+
+/**
+ * This method dispenses coffee from a given coffee maker. The method also 
+ * takes a boolean parameter double, which indicates whether a single or a
+ * double coffee should be dispensed. If double is true, two portions of water
+ * are used, otherwise only one portion of water is used. The method returns a
+ * cup, which can be seen as a cup of the dispensed coffee. The CoffeeMaker has
+ * to be ready to dispense coffee, which means that the grinder has to have
+ * beans and the water tank has to have at least two portions of water left.
+ * The postconditions include the change in concrete values of the water tank
+ * field and the grinder field, so that the verifier can reason about the
+ * concrete values of those fields after the method is used. 
+ */
+method CoffeeMakerDispense(this: Ref, double: Bool) returns (c: Ref)
+    requires CoffeeMaker(this)
+    requires CoffeeMakerReady(this)
+    ensures CoffeeMaker(this)
+    ensures unfolding CoffeeMaker(this) in !getHasBeans(this.CMGrinder)
+    ensures unfolding CoffeeMaker(this) in 
+        double ==> getLevel(this.CMWaterTank) == old(unfolding CoffeeMaker(this) in getLevel(this.CMWaterTank)) - 2
+    ensures unfolding CoffeeMaker(this) in 
+        !double ==> getLevel(this.CMWaterTank) == old(unfolding CoffeeMaker(this) in getLevel(this.CMWaterTank)) - 1
+    ensures Cup(c)
+{
+    unfold CoffeeMaker(this)
+    GrinderGrind(this.CMGrinder)
+    if (double)
+    {
+        WaterTankUse(this.CMWaterTank)
+        WaterTankUse(this.CMWaterTank)
+    }
+    else 
+    {
+        WaterTankUse(this.CMWaterTank)
+    }
+    c := CupConstructor()
+    fold CoffeeMaker(this)
+}
+
+/**
+ * This method tests the CoffeeMaker implementation by constructing a coffee
+ * maker, restocking it with beans and water, and dispensing a double coffee.
+ */
+method CoffeeTestHarness()
+{
+    var cm: Ref := CoffeeMakerConstructor()
+    CoffeeMakerRestock(cm)
+    var c: Ref := CoffeeMakerDispense(cm, true)
+}
+
+/**
+ * This method changes the grinder of a given coffee maker to a new grinder.
+ * We can simply assign a newly constructed grinder to the CMGrinder field of
+ * the coffee maker. The postconditions ensure that the CoffeeMaker predicate
+ * is still valid and that the new grinder has no beans in it.
+ */
+method CoffeeMakerChangeGrinder(this: Ref)
+    requires CoffeeMaker(this)
+    ensures CoffeeMaker(this)
+    ensures unfolding CoffeeMaker(this) in !getHasBeans(this.CMGrinder)
+{
+    unfold CoffeeMaker(this)
+    this.CMGrinder := GrinderConstructor()
+    fold CoffeeMaker(this)
+}
+
+/**
+ * This method installs a given custom grinder in a given coffee maker. The
+ * The postconditions ensure that the CoffeeMaker predicate is still valid and
+ * that the installed grinder maintains the value of its hasBeans field.
+ */
+method CoffeeMakerInstallCustomGrinder(this: Ref, grinder: Ref)
+    requires CoffeeMaker(this)
+    requires Grinder(grinder)
+    ensures CoffeeMaker(this)
+    ensures unfolding CoffeeMaker(this) in old(getHasBeans(grinder)) == getHasBeans(this.CMGrinder)
+{
+    unfold CoffeeMaker(this)
+    this.CMGrinder := grinder
+    fold CoffeeMaker(this)
+}

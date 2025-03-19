@@ -1,0 +1,64 @@
+import "examples-6.4.vpr"
+
+/**
+ * This function takes a list and a value and returns the index of the first
+ * occurrence of this value in the list. If it is not present, it returns the
+ * length of the list.
+ */
+function Find(xs: List[Int], y: Int): Int
+  ensures result >= 0
+  ensures result <= length(xs)
+  decreases xs 
+{
+  xs.isNil ? 0 : (xs.value == y) ? 0 : 1 + Find(xs.tail, y)
+}
+
+
+/**
+ * This lemma proves that if Find returns an index that is not the length of the
+ * list, then calling At with that index will return the found value.
+ */
+function lemmaAtFind(xs: List[Int], y: Int): Unit
+  ensures Find(xs, y) == length(xs) || At(xs, Find(xs, y)) == y
+  decreases xs
+{
+  xs.isNil ? unit() : ((xs.value == y) ? unit() : lemmaAtFind(xs.tail, y))
+}
+
+/**
+ * This lemma proves that no element in the list with an index smaller than  
+ * Find(xs, y) is equal to y, so that Find returns the smallest index of the list,
+ * where the list element matches y.
+ */
+function lemmaBeforeFind(xs: List[Int], y: Int, i: Int): Unit
+  requires i >= 0 
+  ensures i < Find(xs, y) ==> At(xs, i) != y
+  decreases xs
+{
+  xs.isNil ? unit() : ((i==0) ? unit() : lemmaBeforeFind(xs.tail, y, i-1))
+}
+
+/**
+ * This lemma proves that if an element is in a list xs, so Find returns an index smaller
+ * than the length of xs, then appending a list ys to xs will not change the result of Find.
+ */
+function lemmaFindAppend(xs: List[Int], ys: List[Int], y: Int): Unit
+  ensures Find(xs, y) == length(xs) || Find(append(xs, ys), y) == Find(xs, y)
+  decreases xs
+{
+  xs.isNil ? unit() : ((xs.value == y) ? unit() : lemmaFindAppend(xs.tail, ys, y))
+}
+
+/**
+ * This lemma proves that if i is smaller or equal to Find(xs, y),
+ * then dropping the first i elements of the list xs and searching for the 
+ * element y in this dropped list returns the same result as 
+ * Find(xs, y) - i.
+ */
+function lemmaFindDrop(xs: List[Int], y: Int, i: Int): Unit
+  requires i >= 0
+  ensures i <= Find(xs, y) ==> Find(xs, y) == Find(Drop(xs, i), y) + i
+  decreases xs
+{
+  xs.isNil ? unit() : ((i == 0) ? unit() : lemmaFindDrop(xs.tail, y, i-1))
+}

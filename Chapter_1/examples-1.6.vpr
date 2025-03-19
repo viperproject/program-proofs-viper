@@ -1,0 +1,3 @@
+/*
+Viper is an intermediate verification language. As such, there is no concept of ghost code, none of the code is ever executed. Frontends of Viper usually have a concept of ghost code, which is translated to Viper for verification, but removed for actual execution of the frontend code.
+*/

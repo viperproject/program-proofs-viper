@@ -1,0 +1,58 @@
+import "Array.vpr"
+
+/**
+ * This function returns the absolute value of the difference between the two
+ * integers, x and y, which is equivalent to the distance between them, as 
+ * described in the book.
+ */
+function Dist(x: Int, y: Int): Int
+    ensures 0 <= result
+{
+    x < y ? y - x : x - y
+}
+
+/**
+ * This method takes two sorted Array[Int]s and imagines them as the two ground
+ * level axes of a 3D canyon landscape. The indeces of the a and b arrays are
+ * the x and y coordinates of the landscape, while the distance 
+ * Dist(a[x], b[y]) is the z coordinate. Because of the sorted nature of the
+ * arrays, the values form a canyon landscape and this method searches for the 
+ * lowest point in it.
+ */
+method CanyonSearch(a: Array[Int], b: Array[Int]) returns (d: Int)
+    requires iarrayAccessRead(a) && iarrayAccessRead(b)
+    requires len(a) != 0 && len(b) != 0
+    requires iarraySorted(a) && iarraySorted(b)
+    ensures iarrayAccessRead(a) && iarrayAccessRead(b)
+    ensures iarrayUntouched(a) && iarrayUntouched(b)
+    ensures 0 <= d
+    ensures exists i: Int, j: Int :: 
+        0 <= i < len(a) && 0 <= j < len(b) && d == Dist(iarrayLookup(a, i), iarrayLookup(b, j))
+    ensures forall i: Int, j: Int :: 
+        0 <= i < len(a) && 0 <= j < len(b) ==> d <= Dist(iarrayLookup(a, i), iarrayLookup(b, j))
+{
+    d := Dist(iarrayLookup(a, 0), iarrayLookup(b, 0))
+    var m: Int := 0
+    var n: Int := 0
+    while (m < len(a) && n < len(b))
+        invariant iarrayAccessRead(a) && iarrayAccessRead(b)
+        invariant iarrayUntouched(a) && iarrayUntouched(b)
+        invariant 0 <= m <= len(a) && 0 <= n <= len(b)
+        invariant exists i: Int, j: Int :: 0 <= i < len(a) && 0 <= j < len(b) && 
+            d == Dist(iarrayLookup(a, i), iarrayLookup(b, j))
+        invariant forall i: Int, j: Int :: 0 <= i < len(a) && 0 <= j < len(b) ==> 
+            d <= Dist(iarrayLookup(a, i), iarrayLookup(b, j)) || (m <= i && n <= j)
+        decreases len(a) - m + len(b) - n
+        {
+            d := Dist(iarrayLookup(a, m), iarrayLookup(b, n)) < d ? Dist(iarrayLookup(a, m), iarrayLookup(b, n)) : d
+            if (iarrayLookup(a, m) <= iarrayLookup(b, n))
+            {
+                m := m + 1
+            }
+            elseif (iarrayLookup(b, n) <= iarrayLookup(a, m))
+            {
+                n := n + 1
+            }
+        }
+}
+  

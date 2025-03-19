@@ -1,0 +1,14 @@
+// Viper will not continue verifying after the first assertion failed, so we only get a single error.
+method Triple(x: Int) returns (r: Int)
+{
+    if(x == 0){
+        r := 0
+    } else {
+        var y: Int
+        y := 2 * x
+        r := x + y
+    }
+    assert r == 3 * x
+}
+
+// Viper does not have an if-case statement.

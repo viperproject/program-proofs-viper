@@ -1,0 +1,70 @@
+import "../Chapter_13/Array.vpr"
+
+//Exercise 14.0
+/**
+ * This method is the same as in the SetEndPoints example in Section 14.0.0, 
+ * but with the addition of a postcondition, which just repeats the changes of 
+ * the method body.
+ * Now that we are making statements about the outcome of the method, we need
+ * to take care of the case where the length of the array is 1. In this case,
+ * the left and right item are the same, so we need to add a precondition, 
+ * which states that the left and right arguments are the same if the length of
+ * the array is 1. Otherwise we would say that a field can have two different
+ * values at the same time, which is not possible.
+ */
+method SetEndPoints(a: Array[Int], left: Int, right: Int)
+    requires len(a) != 0
+    requires len(a) == 1 ==> left == right
+    requires acc(loc(a, 0).iarrayVal)
+    requires len(a) > 1 ==> acc(loc(a, len(a) - 1).iarrayVal)
+    ensures acc(loc(a, 0).iarrayVal)
+    ensures len(a) > 1 ==> acc(loc(a, len(a) - 1).iarrayVal)
+    ensures iarrayLookup(a, 0) == left && iarrayLookup(a, len(a) - 1) == right
+{
+    iarrayUpdate(a, 0, left)
+    iarrayUpdate(a, len(a) - 1, right)
+}
+
+//Exercise 14.1
+/**
+ * This method is the same as in the Min example in Section 13.3.0, but with
+ * the forced solution of returning 1330. 
+ * The pre- and postconditions are unchanged apart from turning read access to
+ * full access. Instead of comparing anything, we just set the result and the 
+ * first entry of the array to 1330. Then we iterate through the remaining
+ * array to set all entries to 1330. The specifications and the loop invariants
+ * hold, so the method is verified.
+ */
+method Min1330(a: Array[Int]) returns (m: Int)
+    requires iarrayAccessFull(a)
+    requires len(a) != 0
+    ensures iarrayAccessFull(a)
+    ensures forall i: Int :: 0 <= i < len(a) ==> m <= iarrayLookup(a, i)
+    ensures exists i: Int :: 0 <= i < len(a) && m == iarrayLookup(a, i)
+    ensures m == 1330
+{
+    m := 1330
+    iarrayUpdate(a, 0, 1330)
+    var n: Int := 1
+    while (n < len(a))
+        invariant iarrayAccessFull(a)
+        invariant 0 <= n <= len(a)
+        invariant forall i: Int :: 0 <= i < n ==> m <= iarrayLookup(a, i)
+        invariant exists i: Int :: 0 <= i < len(a) && m == iarrayLookup(a, i)
+        {
+            iarrayUpdate(a, n, 1330)
+            n := n + 1
+        }
+}
+
+//Exercise 14.2
+/**
+ * The correct old statement is already in the example code from Section 14.0.1. 
+ * Feel free to comment/uncomment the sections as you wish.
+ */
+
+//Exercise 14.3
+/**
+ * The OldVsNew method from Section 14.0.1 is already implemented. The solution
+ * is trivial.
+ */

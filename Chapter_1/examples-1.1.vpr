@@ -1,0 +1,7 @@
+method Triple(x: Int) returns (r: Int)
+{
+    var y: Int := 2 * x
+    r := x + y
+    assert r == 3 * x
+    //assert r == 3 * x = 1
+}

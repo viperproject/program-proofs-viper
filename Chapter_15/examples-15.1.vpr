@@ -1,0 +1,211 @@
+import "../Chapter_13/Array.vpr"
+
+/**
+ * This method sorts the array a in place using the selection sort algorithm.
+ * At the current state, one loop invariant is not provable and thus the whole
+ * method is commented out. Uncomment it to observe this behavior.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one value.
+ */
+/* method SelectionSort0(a: Array[Int])
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures iarraySorted(a)
+    // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+{
+    var n: Int := 0
+    while (n != len(a))
+        invariant iarrayAccessFull(a)
+        invariant 0 <= n <= len(a)
+        // The following invariant is not provable at this point
+        invariant forall i: Int, j: Int :: 0 <= i < j < n ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+        // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+    {
+        var mIndex: Int := n
+        var m: Int := n
+        while (m != len(a))
+            invariant iarrayAccessFull(a)
+            invariant n <= m <= len(a) && n <= mIndex < len(a)
+            invariant forall i: Int :: 0 <= n <= i < m ==> iarrayLookup(a, mIndex) <= iarrayLookup(a, i)
+            invariant forall i: Int, j: Int :: 0 <= i < j < n ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+            // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+        {
+            if (iarrayLookup(a, m) < iarrayLookup(a, mIndex))
+            {
+                mIndex := m
+            }
+            m := m + 1
+        }
+        var tmp: Int := iarrayLookup(a, n)
+        iarrayUpdate(a, n, iarrayLookup(a, mIndex))
+        iarrayUpdate(a, mIndex, tmp)
+        n := n + 1
+    }
+} */
+
+/**
+ * This is a modification of SelectionSort0 with an improvement to a loop 
+ * invariant of the inner loop.
+ * At the current state, one loop invariant is not provable and thus the whole
+ * method is commented out. Uncomment it to observe this behavior.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one value.
+ */
+/* method SelectionSort1(a: Array[Int])
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures iarraySorted(a)
+    // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+{
+    var n: Int := 0
+    while (n != len(a))
+        invariant iarrayAccessFull(a)
+        invariant 0 <= n <= len(a)
+        // The following invariant is not provable at this point
+        invariant forall i: Int, j: Int :: 0 <= i < j < n ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+        // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+    {
+        var mIndex: Int := n
+        var m: Int := n + 1
+        while (m != len(a))
+            invariant iarrayAccessFull(a)
+            invariant n <= mIndex < m <= len(a)
+            invariant forall i: Int :: 0 <= n <= i < m ==> iarrayLookup(a, mIndex) <= iarrayLookup(a, i)
+            invariant forall i: Int, j: Int :: 0 <= i < j < n ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+            // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+        {
+            if (iarrayLookup(a, m) < iarrayLookup(a, mIndex))
+            {
+                mIndex := m
+            }
+            m := m + 1
+        }
+        var tmp: Int := iarrayLookup(a, n)
+        iarrayUpdate(a, n, iarrayLookup(a, mIndex))
+        iarrayUpdate(a, mIndex, tmp)
+        n := n + 1
+    }
+}  */
+
+/**
+ * This is a modification of SelectionSort1 with an additional assert statement
+ * to debug the unprovable loop invariant.
+ * At the current state, one loop invariant is not provable and thus the whole
+ * method is commented out. Uncomment it to observe this behavior.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one value.
+ */
+/* method SelectionSort2(a: Array[Int])
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures iarraySorted(a)
+    // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+{
+    var n: Int := 0
+    while (n != len(a))
+        invariant iarrayAccessFull(a)
+        invariant 0 <= n <= len(a)
+        // The following invariant is not provable at this point
+        invariant forall i: Int, j: Int :: 0 <= i < j < n ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+        // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+    {
+        var mIndex: Int := n
+        var m: Int := n + 1
+        while (m != len(a))
+            invariant iarrayAccessFull(a)
+            invariant n <= mIndex < m <= len(a)
+            invariant forall i: Int :: 0 <= n <= i < m ==> iarrayLookup(a, mIndex) <= iarrayLookup(a, i)
+            invariant forall i: Int, j: Int :: 0 <= i < j < n ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+            // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+        {
+            if (iarrayLookup(a, m) < iarrayLookup(a, mIndex))
+            {
+                mIndex := m
+            }
+            m := m + 1
+        }
+        var tmp: Int := iarrayLookup(a, n)
+        iarrayUpdate(a, n, iarrayLookup(a, mIndex))
+        iarrayUpdate(a, mIndex, tmp)
+        n := n + 1
+        // The following assertion fails beyond the statement which updates n
+        // and not before, as it does in Dafny. This is due to the fact that
+        // Viper is unable to reason about what element has been swapped to the
+        // position of now n - 1.
+        assert forall i: Int, j: Int :: 0 <= i < j < n ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+    }
+} */
+
+/**
+ * This function checks if the array a is split at index n such that every 
+ * element before n is less than or equal to every element from n onwards.
+ * Dafny predicates are just functions with a Boolean return type. In Viper, a 
+ * predicate is something entirely different. A predicate is an abstraction
+ * over assertions, which can include resources. We will therefore model Dafny
+ * predicates unsing Boolean functions in Viper.
+ */
+function SplitPoint(a: Array[Int], n: Int): Bool
+    requires iarrayAccessRead(a)
+    requires 0 <= n <= len(a)
+{
+    forall i: Int, j: Int :: 0 <= i < n <= j < len(a) ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+}
+
+/**
+ * This method is a modification of SelectionSort2 with the inclusion of the
+ * SplitPoint predicate. This predicate helps describing that with each 
+ * iteration of the outer loop, the minimum element of the unsorted section is
+ * appended to the sorted section. This is enough information for the
+ * unprovable loop invariant to be provable.
+ * Due to timeouts in Viper's symbolic execution backend Silicon and its 
+ * verification condition generation backend Carbon with the multiset condition
+ * in the postcondition, the relevant lines are commented out. This leaves the 
+ * problem's specification incomplete, allowing for a trivial solution where 
+ * each array element is set to one value.
+ */
+method SelectionSort(a: Array[Int])
+    requires iarrayAccessFull(a)
+    ensures iarrayAccessFull(a)
+    ensures iarraySorted(a)
+    // ensures multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+{
+    var n: Int := 0
+    while (n != len(a))
+        invariant iarrayAccessFull(a)
+        invariant 0 <= n <= len(a)
+        // The following invariant is now provable
+        invariant forall i: Int, j: Int :: 0 <= i < j < n ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+        // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+        invariant SplitPoint(a, n)
+    {
+        var mIndex: Int := n
+        var m: Int := n + 1
+        while (m != len(a))
+            invariant iarrayAccessFull(a)
+            invariant n <= mIndex < m <= len(a)
+            invariant forall i: Int :: 0 <= n <= i < m ==> iarrayLookup(a, mIndex) <= iarrayLookup(a, i)
+            invariant forall i: Int, j: Int :: 0 <= i < j < n ==> iarrayLookup(a, i) <= iarrayLookup(a, j)
+            // invariant multiset(iarrayFull(a)) == old(multiset(iarrayFull(a)))
+            invariant SplitPoint(a, n)
+        {
+            if (iarrayLookup(a, m) < iarrayLookup(a, mIndex))
+            {
+                mIndex := m
+            }
+            m := m + 1
+        }
+        var tmp: Int := iarrayLookup(a, n)
+        iarrayUpdate(a, n, iarrayLookup(a, mIndex))
+        iarrayUpdate(a, mIndex, tmp)
+        n := n + 1
+    }
+} 

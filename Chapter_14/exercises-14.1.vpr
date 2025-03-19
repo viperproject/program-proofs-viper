@@ -1,0 +1,359 @@
+import "../Chapter_13/Array.vpr"
+import "examples-14.1.vpr"
+
+//Exercise 14.4
+/**
+ * This method increments every element of the matrix a by 1.
+ * We need to specify that all the elements of the matrix which have not been
+ * modified by the method remain the same.
+ */
+method IncrementMatrix(a: Array2D[Int])
+    requires iarray2DAccessFull(a)
+    ensures iarray2DAccessFull(a)
+    ensures forall i: Int, j: Int :: 0 <= i < len2D0(a) && 0 <= j < len2D1(a) ==> 
+        iarray2DLookup(a, i, j) == old(iarray2DLookup(a, i, j) + 1)
+{
+    var m: Int := 0
+    while (m != len2D0(a))
+        invariant 0 <= m <= len2D0(a)
+        invariant iarray2DAccessFull(a)
+        invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j < len2D1(a) ==> 
+            iarray2DLookup(a, i, j) == old(iarray2DLookup(a, i, j)) + 1
+        invariant forall i: Int, j: Int :: m <= i < len2D0(a) && 0 <= j < len2D1(a) ==> 
+            iarray2DLookup(a, i, j) == old(iarray2DLookup(a, i, j))
+        {
+            var n: Int := 0
+            while (n != len2D1(a))
+                invariant 0 <= n <= len2D1(a)
+                invariant iarray2DAccessFull(a)
+                invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j < len2D1(a) ==> 
+                    iarray2DLookup(a, i, j) == old(iarray2DLookup(a, i, j)) + 1
+                invariant forall i: Int, j: Int :: m < i < len2D0(a) && 0 <= j < len2D1(a) ==> 
+                    iarray2DLookup(a, i, j) == old(iarray2DLookup(a, i, j))
+                invariant forall i: Int :: 0 <= i < n ==> 
+                    iarray2DLookup(a, m, i) == old(iarray2DLookup(a, m, i)) + 1
+                invariant forall i: Int :: n <= i < len2D1(a) ==>
+                    iarray2DLookup(a, m, i) == old(iarray2DLookup(a, m, i))
+                
+            {
+                iarray2DUpdate(a, m, n, iarray2DLookup(a, m, n) + 1)
+                n := n + 1
+            }
+            m := m + 1
+        }
+}
+
+//Exercise 14.5
+/**
+ * This is the same CopyArray method as in the example from Section 14.1.3, but
+ * with the added precondition that the source and destination arrays cannot be
+ * the same.
+ * With this information in mind, we omit all old() expressions from the
+ * specification, because we only have read access for the source array anyway.
+ */
+method CopyArrayDifferentArrays(src: Array[Int], dst: Array[Int])
+    requires iarrayAccessRead(src) && iarrayAccessFull(dst)
+    requires len(src) == len(dst)
+    requires src != dst
+    ensures iarrayAccessRead(src) && iarrayAccessFull(dst)
+    ensures forall i: Int :: 0 <= i < len(src) ==> iarrayLookup(dst, i) == iarrayLookup(src, i)
+{
+    var n: Int := 0
+    while (n != len(src))
+        invariant iarrayAccessRead(src) && iarrayAccessFull(dst)
+        invariant 0 <= n <= len(src)
+        invariant forall i: Int :: 0 <= i < n ==> iarrayLookup(dst, i) == iarrayLookup(src, i)
+    {
+        iarrayUpdate(dst, n, iarrayLookup(src, n))
+        n := n + 1
+    }        
+}
+
+//Exercise 14.6
+/**
+ * This CopyArray method incorporates the suggestions from the book.
+ * Because we don't provide any information about the aliasing case in the
+ * specifications, this method will not work for it. But neither does the Dafny
+ * version in this specific case.
+ */
+method CopyArrayAliasing(src: Array[Int], dst: Array[Int])
+    requires src != dst ==> iarrayAccessRead(src)
+    requires iarrayAccessFull(dst)
+    requires len(src) == len(dst)
+    ensures src != dst ==> iarrayAccessRead(src)
+    ensures iarrayAccessFull(dst)
+    ensures forall i: Int :: 0 <= i < len(src) ==> iarrayLookup(dst, i) == iarrayLookup(src, i)
+{
+    var n: Int := 0
+    while (n != len(src))
+        invariant src != dst ==> iarrayAccessRead(src)
+        invariant iarrayAccessFull(dst)
+        invariant 0 <= n <= len(src)
+        invariant forall i: Int :: 0 <= i < n ==> iarrayLookup(dst, i) == iarrayLookup(src, i)
+    {
+        iarrayUpdate(dst, n, iarrayLookup(src, n))
+        n := n + 1
+    }
+}
+
+//Exercise 14.7
+/**
+ * This method copies the elements of the source matrix to the destination 
+ * matrix and handles the aliasing case adequately.
+ * We just combined the lessons learned from the CopyArray (14.0.0) and 
+ * InitMatrix (14.0.1) methods from the examples to create this one.
+ */
+method CopyMatrix(src: Array2D[Int], dst: Array2D[Int])
+    requires src != dst ==> iarray2DAccessRead(src)
+    requires iarray2DAccessFull(dst)
+    requires len2D0(src) == len2D0(dst) && len2D1(src) == len2D1(dst)
+    ensures src != dst ==> iarray2DAccessRead(src)
+    ensures iarray2DAccessFull(dst)
+    ensures forall i: Int, j: Int :: 0 <= i < len2D0(src) && 0 <= j < len2D1(src) ==> 
+        iarray2DLookup(dst, i, j) == old(iarray2DLookup(src, i, j))
+{
+    var m: Int := 0
+    while (m != len2D0(src))
+        invariant src != dst ==> iarray2DAccessRead(src)
+        invariant iarray2DAccessFull(dst)
+        invariant 0 <= m <= len2D0(src)
+        invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j < len2D1(src) ==> 
+            iarray2DLookup(dst, i, j) == old(iarray2DLookup(src, i, j))
+        invariant forall i: Int, j: Int :: m <= i < len2D0(src) && 0 <= j < len2D1(src) ==> 
+            iarray2DLookup(src, i, j) == old(iarray2DLookup(src, i, j))
+    {
+        var n: Int := 0
+        while (n != len2D1(src))
+            invariant src != dst ==> iarray2DAccessRead(src)
+            invariant iarray2DAccessFull(dst)
+            invariant 0 <= n <= len2D1(src)
+            invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j < len2D1(src) ==> 
+                iarray2DLookup(dst, i, j) == old(iarray2DLookup(src, i, j))
+            invariant forall i: Int :: 0 <= i < n ==> 
+                iarray2DLookup(dst, m, i) == old(iarray2DLookup(src, m, i))
+            invariant forall i: Int :: n <= i < len2D1(src) ==>
+                iarray2DLookup(src, m, i) == old(iarray2DLookup(src, m, i))
+            invariant forall i: Int, j: Int :: m < i < len2D0(src) && 0 <= j < len2D1(src) ==> 
+                iarray2DLookup(src, i, j) == old(iarray2DLookup(src, i, j))
+        {
+            iarray2DUpdate(dst, m, n, iarray2DLookup(src, m, n))
+            n := n + 1
+        }
+        m := m + 1
+    }
+}
+
+//Exercise 14.8
+/**
+ * This method doubles every element of the source array and stores the result
+ * in the destination array. In the aliasing case, the array elements still get
+ * doubled.
+ * We again use the knowledge gained from the CopyArray method (14.0.0). The
+ * only thing to consider is to tell the verifier in the loop that all elements
+ * of the source array above n remain the same.
+ */
+method DoubleArray(src: Array[Int], dst: Array[Int])
+    requires src != dst ==> iarrayAccessRead(src)
+    requires iarrayAccessFull(dst)
+    requires len(src) == len(dst)
+    ensures src != dst ==> iarrayAccessRead(src)
+    ensures iarrayAccessFull(dst)
+    ensures forall i: Int :: 0 <= i < len(src) ==> iarrayLookup(dst, i) == 2 * old(iarrayLookup(src, i))
+{
+    var n: Int := 0
+    while (n != len(src))
+        invariant src != dst ==> iarrayAccessRead(src)
+        invariant iarrayAccessFull(dst)
+        invariant 0 <= n <= len(src)
+        invariant forall i: Int :: 0 <= i < n ==> iarrayLookup(dst, i) == 2 * old(iarrayLookup(src, i))
+        invariant forall i: Int :: n <= i < len(src) ==> iarrayLookup(src, i) == old(iarrayLookup(src, i))
+    {
+        iarrayUpdate(dst, n, 2 * iarrayLookup(src, n))
+        n := n + 1
+    }
+}
+
+//Exercise 14.9
+/**
+ * This method reverses the elements of an array inplace.
+ * The key to making the verifier understand the implementation is showing that
+ * the high ond low indeces of where the swap occurs are tied to each other.
+ */
+method ReverseArray(a: Array[Int])
+    requires iarrayAccessFull(a)
+    requires len(a) > 0
+    ensures iarrayAccessFull(a)
+    ensures forall i: Int :: 0 <= i < len(a) ==> iarrayLookup(a, i) == old(iarrayLookup(a, len(a) - 1 - i))
+{
+    var n: Int := 0
+    while (n < len(a) / 2)
+        invariant iarrayAccessFull(a)
+        invariant 0 <= n <= len(a) / 2
+        invariant forall i: Int :: 0 <= i < n ==> iarrayLookup(a, i) == old(iarrayLookup(a, len(a) - 1 - i))
+        invariant forall i: Int :: len(a) - 1 - n < i < len(a) ==> iarrayLookup(a, i) == old(iarrayLookup(a, len(a) - 1 - i))
+        invariant forall i: Int :: n <= i <= len(a) - 1 - n ==> iarrayLookup(a, i) == old(iarrayLookup(a, i))
+    {
+        var temp: Int := iarrayLookup(a, n)
+        iarrayUpdate(a, n, iarrayLookup(a, len(a) - 1 - n))
+        iarrayUpdate(a, len(a) - 1 - n, temp)
+        n := n + 1
+    }
+}
+
+
+//Exercise 14.10
+/**
+ * This method transposes the elements of a matrix inplace.
+ * The correct segmentation of what has been changed, what changes and what
+ * remains the same is crucial to the verification of this method. Matrices of
+ * size less than 2x2 are not changed by the method, so we don't need to
+ * consider them in the implementation.
+ */
+method TransposeMatrix(a: Array2D[Int])
+    requires iarray2DAccessFull(a)
+    requires len2D0(a) == len2D1(a)
+    ensures iarray2DAccessFull(a)
+    ensures forall i: Int, j: Int :: 0 <= i < len2D0(a) && 0 <= j < len2D1(a) ==> 
+        iarray2DLookup(a, i, j) == old(iarray2DLookup(a, j, i))
+{
+    if (len2D0(a) > 1)
+    {
+        var m: Int := 1
+        while (m < len2D0(a))
+            invariant iarray2DAccessFull(a)
+            invariant 1 <= m <= len2D0(a)
+            invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j <= i ==> 
+                    iarray2DLookup(a, i, j) == old(iarray2DLookup(a, j, i)) && 
+                    iarray2DLookup(a, j, i) == old(iarray2DLookup(a, i, j))
+            invariant forall i: Int, j: Int :: m <= i < len2D0(a) && 0 <= j <= i ==> 
+                    iarray2DLookup(a, i, j) == old(iarray2DLookup(a, i, j)) && 
+                    iarray2DLookup(a, j, i) == old(iarray2DLookup(a, j, i))
+        {
+            var n: Int := 0
+            while (n < m)
+                invariant iarray2DAccessFull(a)
+                invariant 0 <= n <= m
+                invariant forall i: Int, j: Int :: 0 <= i < m && 0 <= j <= i ==> 
+                    iarray2DLookup(a, i, j) == old(iarray2DLookup(a, j, i)) && 
+                    iarray2DLookup(a, j, i) == old(iarray2DLookup(a, i, j))
+                invariant forall i: Int :: 0 <= i < n ==> 
+                    iarray2DLookup(a, m, i) == old(iarray2DLookup(a, i, m)) &&
+                    iarray2DLookup(a, i, m) == old(iarray2DLookup(a, m, i))
+                invariant forall i: Int :: n <= i <= m ==>
+                    iarray2DLookup(a, m, i) == old(iarray2DLookup(a, m, i)) &&
+                    iarray2DLookup(a, i, m) == old(iarray2DLookup(a, i, m))
+                invariant forall i: Int, j: Int :: m < i < len2D0(a) && 0 <= j <= i ==> 
+                    iarray2DLookup(a, i, j) == old(iarray2DLookup(a, i, j)) && 
+                    iarray2DLookup(a, j, i) == old(iarray2DLookup(a, j, i))
+            {
+                var temp: Int := iarray2DLookup(a, m, n)
+                iarray2DUpdate(a, m, n, iarray2DLookup(a, n, m))
+                iarray2DUpdate(a, n, m, temp)
+                n := n + 1
+            }
+            /**
+             * The following assertions are needed for the Silicon symbolic 
+             * execution backend to be able to accurately reason about the
+             * invariant of the outer loop with the same quantifier.
+             */
+            assert forall i: Int, j: Int :: 0 <= i < m && 0 <= j <= i ==> 
+                    iarray2DLookup(a, i, j) == old(iarray2DLookup(a, j, i)) && 
+                    iarray2DLookup(a, j, i) == old(iarray2DLookup(a, i, j))
+            m := m + 1
+            assert forall i: Int, j: Int :: 0 <= i < m && 0 <= j <= i ==> 
+                    iarray2DLookup(a, i, j) == old(iarray2DLookup(a, j, i)) && 
+                    iarray2DLookup(a, j, i) == old(iarray2DLookup(a, i, j))
+        }  
+    }
+}
+
+//Exercise 14.11
+/**
+ * This method "rotates" the elements of an array to the left by one.
+ * The iteration is trivial if we set aside the one element that will be
+ * overwritten at the start. Unfortunately, both the Silicon and Carbon 
+ * solvers time out on this method.
+ */
+/* method RotateArrayLeft(a: Array[Int])
+    requires iarrayAccessFull(a)
+    requires len(a) > 0
+    ensures iarrayAccessFull(a)
+    ensures forall i: Int :: 0 <= i < len(a) ==> iarrayLookup(a, i) == old(iarrayLookup(a, (i + 1) % len(a)))
+{
+    var n: Int := 0
+    var first: Int := iarrayLookup(a, 0)
+    while (n < len(a))
+        invariant iarrayAccessFull(a)
+        invariant 0 <= n <= len(a)
+        invariant first == old(iarrayLookup(a, 0))
+        invariant forall i: Int :: 0 <= i < n ==> iarrayLookup(a, i) == old(iarrayLookup(a, (i + 1) % len(a)))
+        invariant forall i: Int :: n <= i < len(a) ==> iarrayLookup(a, i) == old(iarrayLookup(a, i))
+    {
+        if (n + 1 % len(a) == 0)
+        {
+            iarrayUpdate(a, n, first)
+        }
+        else
+        {
+            iarrayUpdate(a, n, iarrayLookup(a, (n + 1) % len(a)))
+        }
+        n := n + 1
+    }       
+} */
+
+// Exercise 14.12
+/**
+ * This method "rotates" the elements of an array to the right by one.
+ * The iteration is trivial if we set aside the one element that will be
+ * overwritten at the start. Unfortunately, both the Silicon and Carbon 
+ * solvers time out on this method.
+ */
+/* method RotateArrayRight(a: Array[Int])
+    requires iarrayAccessFull(a)
+    requires len(a) > 0
+    ensures iarrayAccessFull(a)
+    ensures forall i: Int :: 0 <= i < len(a) ==> iarrayLookup(a, i) == old(iarrayLookup(a, ((i - 1) % len(a))))
+{
+    var n: Int := len(a) - 1
+    var last: Int := iarrayLookup(a, len(a) - 1)
+    while (n >= 0)
+        invariant iarrayAccessFull(a)
+        invariant -1 <= n < len(a)
+        invariant forall i: Int :: n < i < len(a) ==> iarrayLookup(a, i) == old(iarrayLookup(a, ((i - 1) % len(a))))
+        invariant forall i: Int :: 0 <= i <= n ==> iarrayLookup(a, i) == old(iarrayLookup(a, i))
+    {
+        if (n - 1 % len(a) == len(a) - 1)
+        {
+            iarrayUpdate(a, n, last)
+        }
+        else
+        {
+            iarrayUpdate(a, n, iarrayLookup(a, (n - 1) % len(a)))
+        }
+        n := n - 1
+    }
+} */
+
+//Exercise 14.13
+/**
+ * Viper does not have the forall statement for loops, so this exercise is
+ * unnecessary. Do not confuse the forall statement with the forall quantifier.
+ */
+
+//Exercise 14.14
+/**
+ * Viper does not have the forall statement for loops, so this exercise is
+ * unnecessary. Do not confuse the forall statement with the forall quantifier.
+ */
+
+//Exercise 14.15
+/**
+ * Viper does not have the forall statement for loops, so this exercise is
+ * unnecessary. Do not confuse the forall statement with the forall quantifier.
+ */
+
+//Exercise 14.16
+/**
+ * Viper does not have the forall statement for loops, so this exercise is
+ * unnecessary. Do not confuse the forall statement with the forall quantifier.
+ */

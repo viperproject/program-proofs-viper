@@ -1,0 +1,55 @@
+function F(x: Int): Int 
+  decreases x
+{
+  x < 10 ? x : F(x-1)
+}
+
+function G(x: Int): Int 
+  decreases x
+{
+  0 <= x ? G(x-2) : x
+}
+
+function H(x: Int): Int 
+  decreases x + 60
+{
+  x <= -60 ? x : H(x-1)
+}
+
+function I(x: Int, y: Int): Int 
+  requires 0 <= x && 0 <= y
+  decreases x + y
+{
+  (x == 0 || y == 0) ? 12 :
+  (x%2 == y%2 ? I(x-1,y) : I(x, y-1))
+}
+
+function J(x: Int, y: Int): Int 
+  requires 0 <= x && 0 <= y
+  decreases 4*x + y
+{
+  x == 0 ? y :
+  (y == 0 ? J(x-1,3) : J(x,y-1))
+}
+
+function K(x: Int, y: Int, z: Int): Int 
+  requires 0 <= x && 0 <= y && 0 <= z
+  decreases x + y
+{
+  (x < 10 || y < 5) ? x + y :
+  (z == 0 ? K(x-1,y,5) : K(x, y-1, z-1))
+}
+
+function L(x: Int): Int 
+  decreases 100-x
+{
+  x < 100 ? L(x+1) + 10 : x
+}
+
+function HG(n: Int): Int 
+  decreases n
+  requires 0 <= n
+  ensures 0 <= result && result <= n
+{
+  n == 0 ? 0 : n - HG(HG(n-1))
+}

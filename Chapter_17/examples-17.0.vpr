@@ -1,0 +1,136 @@
+/*
+ Viper does not have objects the way Dafny does, so our objects in this chapter will be references with appropriate predicates and the methods will take an additional parameter to the reference.
+
+ We will explore some different ways to express the mathematical ghost states, including passing them as parameters, having fields containing them in the predicate and having functions that return the mathematical state for a given object.
+
+ Here we keep a separate ghost parameter `elems` that we pass along with the Ref.
+ */
+
+import "../Chapter_13/Array.vpr"
+
+field default: Int
+
+// the field a is already used by arrays
+field a2: Array[Int]
+field b: Array[Int]
+field c: Array[Int]
+field n: Int
+field N: Int
+field s: Set[Int]
+
+
+
+predicate lazyArray(x: Ref) {
+    acc(x.default, 1/2) && acc(x.a2) && iarrayAccessFull(x.a2) && acc(x.b) && iarrayAccessFull(x.b) && acc(x.c) && iarrayAccessFull(x.c) && acc(x.n) && acc(x.N, 1/2) && acc(x.s)
+}
+
+/*
+Throughout this chapter, we see that Viper can do much of the explicit framing automatically, instead of explicitly tracking a Repr set. This makes many of the definitions simpler in this regard.
+*/
+function valid(la: Ref, elems: Seq[Int]): Bool
+requires lazyArray(la)
+{
+    (unfolding lazyArray(la) in la.N == |elems| && |elems| == len(la.a2) && |elems| == len(la.b) && |elems| == len(la.c)&& 0 <= la.n <= |elems|) 
+    &&
+    (forall i: Int :: 0 <= i < |elems| ==> elems[i] == (isInitialized(la, elems, i) ? (unfolding lazyArray(la) in iarrayLookup(la.a2, i)): (unfolding lazyArray(la) in la.default)))
+    &&
+    (forall j: Int :: j in (unfolding lazyArray(la) in la.s) <==> (0 <= j < |elems| && isInitialized(la, elems, j))) && unfolding lazyArray(la) in |la.s| == la.n
+}
+
+function isInitialized(la: Ref, elems: Seq[Int], i: Int): Bool
+requires lazyArray(la)
+requires 0 <= i < |elems|
+requires unfolding lazyArray(la) in 0 <= la.n <= |elems|
+requires unfolding lazyArray(la) in len(la.b) == |elems|
+requires unfolding lazyArray(la) in len(la.c) == |elems| 
+{
+    unfolding lazyArray(la) in 0 <= iarrayLookup(la.b, i) < la.n && iarrayLookup(la.c, iarrayLookup(la.b, i)) == i
+}
+
+method constructor(length: Int, initial: Int) returns (la: Ref, elems: Seq[Int])
+requires length > 0
+ensures lazyArray(la)
+ensures valid(la, elems)
+ensures |elems| == length
+ensures forall i: Int :: 0 <= i < |elems| ==> elems[i] == initial
+{
+    la := new(*)
+    la.N := length
+    la.default := initial
+    la.a2 := iarrayInit(length)
+    la.b := iarrayInit(length)
+    la.c := iarrayInit(length)
+    la.n := 0
+    la.s := Set()
+    elems := getSeq(length, initial)
+    fold lazyArray(la)
+}
+
+method getSeq(length: Int, val: Int) returns (elems: Seq[Int])
+requires length > 0
+ensures |elems| == length
+ensures forall i: Int :: 0 <= i < |elems| ==> elems[i] == val
+
+
+function get(la: Ref, i: Int, elems: Seq[Int]): Int
+requires lazyArray(la) 
+requires valid(la, elems) && 0 <= i < |elems|
+ensures result == elems[i]
+{
+    isInitialized(la, elems, i) ? (unfolding lazyArray(la) in iarrayLookup(la.a2, i)): (unfolding lazyArray(la) in la.default)
+}
+
+method update(la: Ref, i: Int, v: Int, elems: Seq[Int]) returns (newElems: Seq[Int])
+requires lazyArray(la)
+requires valid(la, elems) && 0 <= i < |elems|
+ensures lazyArray(la)
+ensures valid(la, newElems)
+ensures newElems == elems[i := v]
+{
+    if(!isInitialized(la, elems, i)){
+        var u: Unit := LemmaThereIsRoom(la, elems, i)
+        unfold lazyArray(la)
+        assert i < len(la.b)
+        assert la.n < len(la.c)
+        iarrayUpdate(la.b, i, la.n)
+        iarrayUpdate(la.c, la.n, i)
+        la.n := la.n + 1
+        la.s := la.s union Set(i)
+        fold lazyArray(la)
+    }
+    unfold lazyArray(la)
+    iarrayUpdate(la.a2, i, v)
+    fold lazyArray(la)
+    newElems := elems[i := v]
+
+    assert isInitialized(la, newElems, i)
+}
+
+function LemmaThereIsRoom(la: Ref, elems: Seq[Int], i: Int): Unit
+requires lazyArray(la) && valid(la, elems)
+requires 0 <= i < |elems|
+requires !isInitialized(la, elems, i)
+ensures unfolding lazyArray(la) in la.n < |elems|
+{
+    unfolding lazyArray(la) in let S == (Upto(la.N)) in SetCardinalities(la.s, S, i)
+}
+
+function Upto(k: Int): Set[Int]
+ensures forall i: Int :: i in result <==> 0 <= i < k
+ensures |result| == k
+{
+    k == 0 ? Set() : Upto(k - 1) union Set(k - 1)
+}
+
+function SetCardinalities(u: Set[Int], U: Set[Int], x: Int): Unit
+requires u subset U
+ensures |u| <= |U|
+ensures !(x in u) && x in U ==> |u| < |U|
+{
+    u == Set() ? unit() : let y == (select(u)) in SetCardinalities(u setminus Set(y), U setminus Set(y), x)
+}
+
+// Models the existential initialization of Dafny
+function select(u: Set[Int]): Int
+requires |u| > 0
+ensures result in u

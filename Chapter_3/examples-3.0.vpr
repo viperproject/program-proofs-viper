@@ -1,0 +1,57 @@
+method BadDouble(x: Int) returns (d: Int)
+ensures d == 2 * x
+{
+    var y: Int 
+    y := BadDouble(x - 1)
+    d := y + 2
+}
+
+method PartialId(x: Int) returns (y: Int)
+{ 
+    if(x % 2 == 0){
+        y := x
+    } else {
+        y := PartialId(x)
+    }
+}
+
+method Squarish(x: Int, guess: Int) returns (y: Int)
+ensures x * x == y
+{
+    if(guess == x * x){
+        y := guess
+    } else {
+        // Viper does not have if-cases, but in this case we use non-deterministic branching to model the same behavior.
+        // By declaring a boolean variable, but not assigning it, we can use it to model a non-deterministic choice.
+        // Viper variables which are only declared can have any value of their type.
+        var b: Bool
+        if(b){
+            y := Squarish(x, guess - 1)
+        } else {
+            y := Squarish(x, guess + 1)
+        }
+
+    }
+}
+
+method Impossible(x: Int) returns (y: Int)
+ensures y % 2 == 0 && y == 10 * x - 3
+{
+    y := Impossible(x)
+}
+
+function Dubious(): Int
+{
+    1 + Dubious()
+}
+
+method proveFalse()
+{
+    var a: Int
+    a := Dubious()
+    //assert a == Dubious()
+    //assert a == 1 + Dubious()
+    //assert a == a + 1
+    //assert 0 == 1
+    assert false
+}

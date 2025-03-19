@@ -1,0 +1,30 @@
+import "examples-8.0.vpr"
+
+//Exercise 8.0
+/**
+ * Generic functions
+ */
+
+//Exercise 8.1
+/**
+ * This lemma proves that if the projection of the two lists
+ * on the element p is the same, then the two lists have the
+ * same number of elements equal to p.
+ */
+function lemmaSamePCount(xs: List[Int], ys: List[Int], p: Int): Unit
+    ensures Project(xs, p) == Project(ys, p) ==> Count(xs, p) == Count(ys, p)
+    decreases ys, xs
+{
+    (Project(xs, p) == Project(ys, p)) ? xs.isNil ? ys.isNil ? unit()
+            : 
+            lemmaSamePCount(xs, ys.tail, p)
+                : 
+                ys.isNil ? lemmaSamePCount(xs.tail, ys, p)
+                    :
+                    (xs.value == p && ys.value == p) ? lemmaSamePCount(xs.tail, ys.tail, p) :
+                    (xs.value != p && ys.value == p) ? lemmaSamePCount(xs.tail, ys, p) : 
+                    (xs.value == p && ys.value != p) ? lemmaSamePCount(xs, ys.tail, p) :
+                    lemmaSamePCount(xs.tail, ys.tail, p) 
+                    : 
+                    unit()
+}

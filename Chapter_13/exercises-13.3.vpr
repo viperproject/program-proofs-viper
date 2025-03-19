@@ -1,0 +1,44 @@
+import "Array.vpr"
+
+//Exercise 13.9
+/**
+ * Skipped, because it is textual only.
+ */
+
+//Exercise 13.10
+/**
+ * Skipped, because it is textual only.
+ */
+
+//Exercise 13.11
+/**
+ * Skipped, because it is textual only.
+ */
+
+//Exercise 13.12
+/**
+ * We are asked to implement a method, which computes the maximum of an array
+ * of type nat, which is equal to an int array with only non-negative values.
+ */
+ method IarrayMaxNat(a: Array[Int]) returns (max: Int)
+    requires iarrayAccessRead(a)
+    requires forall i: Int :: 0 <= i < len(a) ==> iarrayLookup(a, i) >= 0
+    ensures iarrayAccessRead(a)
+    ensures forall i: Int :: 0 <= i < len(a) ==> iarrayLookup(a, i) <= max
+    ensures len(a) == 0 ==> max == 0
+{
+    max := 0
+    var i: Int := 0
+    assert len(a) == 0 ==> max == 0
+    while (i < len(a))
+        invariant iarrayAccessRead(a)
+        invariant 0 <= i <= len(a)
+        invariant forall j: Int :: 0 <= j < i ==> iarrayLookup(a, j) <= max
+        invariant len(a) == 0 ==> max == 0
+    {
+        if (iarrayLookup(a, i) > max) {
+            max := iarrayLookup(a, i)
+        }
+        i := i + 1
+    }
+}

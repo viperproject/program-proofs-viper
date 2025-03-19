@@ -1,0 +1,31 @@
+import "examples-12.1.vpr"
+
+/**
+ * This function calculates the 2 to the power of n. 2 to the power
+ * of 0 is equal to 1.
+ */
+function Power(n: Int): Int
+    requires 0 <= n 
+    ensures 0 <= result
+    decreases n
+{
+    (n==0) ? 1 : 2 * Power(n-1)
+}
+
+method ComputePower(n: Int) returns (p: Int)
+    requires 0 <= n 
+    ensures 0 <= p 
+    ensures p == Power(n)
+    decreases
+{
+    p := 1
+    var i: Int := 0
+    while(i != n)
+        invariant 0 <= i && i <= n 
+        invariant p == Power(i)
+        decreases n - i
+    {
+        p := 2 * p
+        i := i + 1
+    }
+}

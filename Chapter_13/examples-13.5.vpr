@@ -1,0 +1,35 @@
+import "Array.vpr"
+
+/**
+ * This method searches for a key in a 3D sloping landscape, where the 2D array
+ * represents the ground level coordinates and the value in it represents an
+ * elevation at that coordinate.
+ */
+method SlopeSearch(a: Array2D[Int], key: Int) returns (m: Int, n: Int)
+    requires iarray2DAccessRead(a)
+    requires forall i: Int, j: Int, j_: Int :: 0 <= i < len2D0(a) && 0 <= j < j_ < len2D1(a) ==>
+        iarray2DLookup(a, i, j) <= iarray2DLookup(a, i, j_)
+    requires forall i: Int, i_: Int, j: Int :: 0 <= i < i_ < len2D0(a) && 0 <= j < len2D1(a) ==>
+        iarray2DLookup(a, i, j) <= iarray2DLookup(a, i_, j)
+    requires exists i: Int, j: Int :: 0 <= i < len2D0(a) && 0 <= j < len2D1(a) && iarray2DLookup(a, i, j) == key
+    ensures iarray2DAccessRead(a) && iarray2DUntouched(a)
+    ensures 0 <= m < len2D0(a) && 0 <= n < len2D1(a)
+    ensures iarray2DLookup(a, m, n) == key
+{
+    m := 0 
+    n := len2D1(a) - 1;
+    while (iarray2DLookup(a, m, n) != key)
+        invariant iarray2DAccessRead(a) && iarray2DUntouched(a)
+        invariant 0 <= m < len2D0(a) && 0 <= n < len2D1(a)
+        invariant exists i: Int, j: Int :: m <= i < len2D0(a) && 0 <= j <= n && iarray2DLookup(a, i, j) == key
+        {
+            if (iarray2DLookup(a, m, n) < key)
+            {
+                m := m + 1
+            }
+            else
+            {
+                n := n - 1
+            }
+        }
+}
